@@ -108,7 +108,7 @@ export default function Home() {
         </div>
 
         {/* Social Links */}
-        <div className="flex gap-6 justify-center items-center mb-28">
+        <div className="flex flex-wrap gap-6 justify-center items-center mb-28">
           <a
             href="https://x.com/RedactedWallet"
             target="_blank"
@@ -140,6 +140,41 @@ export default function Home() {
             </svg>
             <span className="text-sm font-medium">White Paper</span>
           </Link>
+
+          {/* 3D $Redacted Button */}
+          <button
+            className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
+              color: '#000000',
+              boxShadow: '0 4px 0 #888888, 0 6px 12px rgba(0, 0, 0, 0.3)',
+              transform: 'translateY(0)',
+              fontWeight: '600'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'translateY(2px)';
+              e.currentTarget.style.boxShadow = '0 2px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.25)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 0 #888888, 0 6px 12px rgba(0, 0, 0, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 0 #888888, 0 6px 12px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            <span className="relative z-10 text-sm font-bold">$Redacted</span>
+            <svg className="w-4 h-4 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            <div
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
+              }}
+            />
+          </button>
         </div>
 
         {/* Features */}

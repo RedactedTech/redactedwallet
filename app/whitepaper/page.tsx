@@ -8,57 +8,178 @@ export default function WhitePaper() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="relative z-10 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image
-              src="/transparentlogo.png"
-              alt="Redacted"
-              width={40}
-              height={40}
-              className="object-contain"
-            />
-            <span className="text-xl font-semibold text-white">Redacted</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-sm font-medium px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}
-          >
-            Back to Home
-          </Link>
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <Image
+                src="/transparentlogo.png"
+                alt="Redacted"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-xl font-semibold text-white">Redacted</span>
+            </Link>
+            <Link
+              href="/"
+              className="text-sm font-medium px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}
+            >
+              Back to Home
+            </Link>
+          </div>
+
+          {/* Social Links */}
+          <div className="flex flex-wrap gap-4 justify-center items-center">
+            <a
+              href="https://x.com/RedactedWallet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#ffffff'
+              }}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span className="text-xs font-medium">Follow us</span>
+            </a>
+
+            <Link
+              href="/whitepaper"
+              className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#ffffff'
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="text-xs font-medium">White Paper</span>
+            </Link>
+
+            <button
+              className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
+                color: '#000000',
+                boxShadow: '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)',
+                transform: 'translateY(0)',
+                fontWeight: '600'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'translateY(1.5px)';
+                e.currentTarget.style.boxShadow = '0 1.5px 0 #888888, 0 3px 6px rgba(0, 0, 0, 0.25)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              <span className="relative z-10 text-xs font-bold">$Redacted</span>
+              <svg className="w-3 h-3 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
+                }}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-16 md:py-24">
-        {/* Title */}
-        <div className="text-center mb-16">
+        {/* Title Section with $Redacted Button */}
+        <div className="text-center mb-20">
           <h1
-            className="text-5xl md:text-6xl font-bold tracking-tight mb-6"
+            className="text-6xl md:text-7xl font-bold tracking-tight mb-4"
             style={{
               background: 'linear-gradient(180deg, #FFFFFF 0%, #888888 100%)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
+              WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 4px 24px rgba(255, 255, 255, 0.1))'
             }}
           >
             White Paper
           </h1>
-          <p className="text-xl" style={{ color: '#9ca3af' }}>
+          <p className="text-xl mb-8" style={{ color: '#9ca3af' }}>
             Understanding Privacy-First Trading
           </p>
+
+          {/* 3D $Redacted Button */}
+          <div className="inline-block mt-4">
+            <button
+              className="group relative px-8 py-4 text-xl font-bold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
+                color: '#000000',
+                boxShadow: '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)',
+                transform: 'translateY(0)',
+                letterSpacing: '0.02em'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'translateY(4px)';
+                e.currentTarget.style.boxShadow = '0 4px 0 #888888, 0 8px 15px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)';
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span>$Redacted</span>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
+                }}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Sections */}
-        <div className="space-y-12">
+        <div className="space-y-16">
           {/* Introduction */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">The Problem</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">The Problem</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <p>
                 In today's crypto markets, every transaction you make is permanently recorded on the blockchain.
                 This creates a significant problem: <span className="font-semibold text-white">anyone can track your trading activity</span>.
@@ -67,7 +188,7 @@ export default function WhitePaper() {
                 Professional traders, bots, and copy-traders monitor successful wallets and replicate their strategies.
                 This means:
               </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
+              <ul className="list-disc list-inside space-y-3 ml-6" style={{ color: '#9ca3af' }}>
                 <li>Your profitable trades get front-run by MEV bots</li>
                 <li>Copy-traders drive up prices before you can enter positions</li>
                 <li>Your trading patterns become public knowledge</li>
@@ -81,20 +202,31 @@ export default function WhitePaper() {
           </section>
 
           {/* The Solution */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">The Redacted Solution</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">The Redacted Solution</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <p>
                 Redacted makes you <span className="font-semibold text-white">mathematically invisible</span> on the blockchain.
                 Here's how it works, explained simply:
               </p>
 
-              <div className="space-y-6 mt-6">
+              <div className="space-y-6 mt-8">
                 <div
-                  className="p-6 rounded-2xl"
+                  className="p-7 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
                   style={{
-                    background: 'rgba(20, 20, 20, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                    background: 'rgba(30, 30, 30, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                   }}
                 >
                   <h3 className="text-xl font-semibold text-white mb-3">1. One Wallet, A Thousand Masks</h3>
@@ -106,10 +238,11 @@ export default function WhitePaper() {
                 </div>
 
                 <div
-                  className="p-6 rounded-2xl"
+                  className="p-7 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
                   style={{
-                    background: 'rgba(20, 20, 20, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                    background: 'rgba(30, 30, 30, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                   }}
                 >
                   <h3 className="text-xl font-semibold text-white mb-3">2. Breaking the Chain</h3>
@@ -125,10 +258,11 @@ export default function WhitePaper() {
                 </div>
 
                 <div
-                  className="p-6 rounded-2xl"
+                  className="p-7 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
                   style={{
-                    background: 'rgba(20, 20, 20, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                    background: 'rgba(30, 30, 30, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                   }}
                 >
                   <h3 className="text-xl font-semibold text-white mb-3">3. MEV Protection via Jito Bundles</h3>
@@ -145,10 +279,11 @@ export default function WhitePaper() {
                 </div>
 
                 <div
-                  className="p-6 rounded-2xl"
+                  className="p-7 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
                   style={{
-                    background: 'rgba(20, 20, 20, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                    background: 'rgba(30, 30, 30, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                   }}
                 >
                   <h3 className="text-xl font-semibold text-white mb-3">4. Seamless User Experience</h3>
@@ -163,9 +298,19 @@ export default function WhitePaper() {
           </section>
 
           {/* Technical Architecture */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">How It Works (Technical Overview)</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">How It Works (Technical Overview)</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <p>
                 For those interested in the technical details, here's what happens under the hood:
               </p>
@@ -215,14 +360,25 @@ export default function WhitePaper() {
           </section>
 
           {/* Benefits */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">Key Benefits</h2>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-8 tracking-tight">Key Benefits</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Complete Privacy</h3>
@@ -232,10 +388,11 @@ export default function WhitePaper() {
               </div>
 
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">No Copy-Traders</h3>
@@ -245,10 +402,11 @@ export default function WhitePaper() {
               </div>
 
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">MEV Protection</h3>
@@ -258,10 +416,11 @@ export default function WhitePaper() {
               </div>
 
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Maintain Edge</h3>
@@ -271,10 +430,11 @@ export default function WhitePaper() {
               </div>
 
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Zero Compromise</h3>
@@ -284,10 +444,11 @@ export default function WhitePaper() {
               </div>
 
               <div
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-xl transition-all duration-300 hover:scale-[1.03]"
                 style={{
-                  background: 'rgba(20, 20, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                  background: 'rgba(30, 30, 30, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Simple to Use</h3>
@@ -299,9 +460,19 @@ export default function WhitePaper() {
           </section>
 
           {/* Use Cases */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">Who Benefits from Redacted?</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Who Benefits from Redacted?</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <ul className="space-y-4">
                 <li className="flex gap-4">
                   <span className="text-2xl">💎</span>
@@ -343,9 +514,19 @@ export default function WhitePaper() {
           </section>
 
           {/* Security */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">Security &amp; Trust</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Security &amp; Trust</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <p>
                 Redacted is built with security as the foundation:
               </p>
@@ -371,9 +552,19 @@ export default function WhitePaper() {
           </section>
 
           {/* Conclusion */}
-          <section>
-            <h2 className="text-3xl font-bold text-white mb-4">Conclusion</h2>
-            <div className="space-y-4 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+          <section
+            className="p-8 md:p-10 rounded-3xl"
+            style={{
+              background: 'rgba(20, 20, 20, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Conclusion</h2>
+            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
               <p>
                 The blockchain's transparency is both its greatest strength and, for traders, its greatest weakness.
                 Redacted solves this paradox by providing <span className="font-semibold text-white">mathematical privacy</span> without
@@ -389,13 +580,17 @@ export default function WhitePaper() {
           {/* CTA */}
           <section className="mt-16 text-center">
             <div
-              className="p-12 rounded-3xl"
+              className="p-12 md:p-16 rounded-3xl"
               style={{
-                background: 'rgba(20, 20, 20, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
+                background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(20, 20, 20, 0.7) 100%)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderTop: '2px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 12px 40px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08) inset'
               }}
             >
-              <h2 className="text-3xl font-bold text-white mb-4">Ready to Trade Invisibly?</h2>
+              <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Ready to Trade Invisibly?</h2>
               <p className="text-lg mb-8" style={{ color: '#9ca3af' }}>
                 Join traders who value their privacy and competitive edge.
               </p>

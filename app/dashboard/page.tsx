@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
 
 interface User {
   id: string;
@@ -201,9 +203,80 @@ export default function DashboardPage() {
               Welcome back, {user?.email}
             </p>
           </div>
-          <Button variant="secondary" onClick={handleLogout}>
-            Logout
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={handleLogout}>
+              Logout
+            </Button>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="flex flex-wrap gap-4 justify-center items-center mt-6">
+          <a
+            href="https://x.com/RedactedWallet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            <span className="text-xs font-medium">Follow us</span>
+          </a>
+
+          <Link
+            href="/whitepaper"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-xs font-medium">White Paper</span>
+          </Link>
+
+          <button
+            className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
+              color: '#000000',
+              boxShadow: '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)',
+              transform: 'translateY(0)',
+              fontWeight: '600'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'translateY(1.5px)';
+              e.currentTarget.style.boxShadow = '0 1.5px 0 #888888, 0 3px 6px rgba(0, 0, 0, 0.25)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            <span className="relative z-10 text-xs font-bold">$Redacted</span>
+            <svg className="w-3 h-3 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            <div
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
+              }}
+            />
+          </button>
         </div>
       </div>
 
@@ -404,39 +477,47 @@ export default function DashboardPage() {
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="cursor-pointer hover:border-white/20 transition-colors">
+          {/* Execute Trade - Coming Soon */}
+          <Card className="cursor-not-allowed opacity-60">
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Execute Trade
-              </h3>
-              <p className="text-sm text-gray-400">
-                Coming soon - Trade tokens with your ghost wallets
-              </p>
-            </div>
-          </Card>
-
-          <Card className="cursor-pointer hover:border-white/20 transition-colors">
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold text-white">
+                  Execute Trade
+                </h3>
+                <Badge variant="warning">Coming Soon</Badge>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Monitor Tokens
-              </h3>
               <p className="text-sm text-gray-400">
-                Coming soon - Track trending tokens and opportunities
+                Trade tokens with your ghost wallets
               </p>
             </div>
           </Card>
 
-          <Card className="cursor-pointer hover:border-white/20 transition-colors">
+          {/* Monitor Tokens - Active */}
+          <Link href="/dashboard/tokens">
+            <Card className="cursor-pointer hover:border-white/20 transition-all hover:scale-105">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Monitor Tokens
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Track trending tokens and opportunities
+                </p>
+              </div>
+            </Card>
+          </Link>
+
+          {/* Create Strategy - Coming Soon */}
+          <Card className="cursor-not-allowed opacity-60">
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -444,11 +525,14 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Create Strategy
-              </h3>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold text-white">
+                  Create Strategy
+                </h3>
+                <Badge variant="warning">Coming Soon</Badge>
+              </div>
               <p className="text-sm text-gray-400">
-                Coming soon - Automate your trading with custom strategies
+                Automate your trading with custom strategies
               </p>
             </div>
           </Card>
