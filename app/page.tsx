@@ -68,7 +68,7 @@ export default function Home() {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-28">
+        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
           <Link
             href="/auth/register"
             className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
@@ -104,6 +104,41 @@ export default function Home() {
             }}
           >
             <span className="relative z-10">Sign in</span>
+          </Link>
+        </div>
+
+        {/* Social Links */}
+        <div className="flex gap-6 justify-center items-center mb-28">
+          <a
+            href="https://x.com/RedactedWallet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            <span className="text-sm font-medium">Follow us</span>
+          </a>
+
+          <Link
+            href="/whitepaper"
+            className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-medium">White Paper</span>
           </Link>
         </div>
 
