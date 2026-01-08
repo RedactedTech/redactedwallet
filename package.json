@@ -9,7 +9,7 @@
     "dev:worker": "nodemon --watch backend --exec tsx backend/src/workers/tradeMonitor.ts",
     "clear-cache": "node scripts/clear-cache.js",
     "build": "next build",
-    "start": "next start -p 3500",
+    "start": "next start",
     "start:backend": "tsx backend/src/server.ts",
     "start:worker": "tsx backend/src/workers/tradeMonitor.ts",
     "lint": "eslint"
