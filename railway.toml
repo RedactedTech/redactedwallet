@@ -1,0 +1,8 @@
+# Frontend service configuration
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "next start -p $PORT"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
