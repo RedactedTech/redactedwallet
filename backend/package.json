@@ -1,0 +1,10 @@
+{
+  "name": "redacted-backend",
+  "version": "1.0.0",
+  "description": "Redacted backend API",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "tsx src/server.ts"
+  },
+  "dependencies": {}
+}
