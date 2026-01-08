@@ -1,8 +1,0 @@
-# Backend API service configuration
-[build]
-builder = "nixpacks"
-
-[deploy]
-startCommand = "cd .. && npm run start:backend"
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 10
