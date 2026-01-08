@@ -76,14 +76,13 @@ export class AuthService {
    * This allows wallet derivation without storing plain password
    */
   private static encryptPasswordForSession(password: string, userId: string): string {
-    // Use JWT secret + userId as encryption key
+    // Use JWT secret + userId as encryption key (32 bytes for AES-256)
     const sessionKey = crypto.createHash('sha256')
       .update(this.JWT_SECRET + userId)
-      .digest('hex')
-      .substring(0, 32);
+      .digest(); // Returns 32-byte Buffer directly
 
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(sessionKey, 'hex'), iv);
+    const cipher = crypto.createCipheriv('aes-256-cbc', sessionKey, iv);
 
     let encrypted = cipher.update(password, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -99,14 +98,13 @@ export class AuthService {
     try {
       const sessionKey = crypto.createHash('sha256')
         .update(this.JWT_SECRET + userId)
-        .digest('hex')
-        .substring(0, 32);
+        .digest(); // Returns 32-byte Buffer directly
 
       const buffer = Buffer.from(encryptedToken, 'base64');
       const iv = buffer.subarray(0, 16);
       const encryptedPassword = buffer.subarray(16);
 
-      const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(sessionKey, 'hex'), iv);
+      const decipher = crypto.createDecipheriv('aes-256-cbc', sessionKey, iv);
 
       let decrypted = decipher.update(encryptedPassword);
       decrypted = Buffer.concat([decrypted, decipher.final()]);
