@@ -145,7 +145,10 @@ function TradePageContent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ strategyId: null })
+          body: JSON.stringify({
+            strategyId: null,
+            password: tradePassword
+          })
         });
 
         const walletData = await walletResponse.json();
@@ -301,6 +304,91 @@ function TradePageContent() {
           </>
         )}
       </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Confirm Trade
+                </h3>
+                <button
+                  onClick={handleCancelPasswordModal}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-300">
+                To execute this trade, we need to create or access a ghost wallet. Enter your password to continue.
+              </p>
+
+              {tradeError && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-sm">{tradeError}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Your Password
+                </label>
+                <input
+                  type="password"
+                  value={tradePassword}
+                  onChange={(e) => setTradePassword(e.target.value)}
+                  placeholder="Enter your account password"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+                  onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Required to derive wallet from your master seed
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleCancelPasswordModal}
+                  className="flex-1 px-4 py-3 rounded-lg transition-colors"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordSubmit}
+                  disabled={!tradePassword}
+                  className="flex-1 px-4 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: tradePassword
+                      ? 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.1))'
+                      : 'rgba(255, 255, 255, 0.04)',
+                    border: tradePassword
+                      ? '1px solid rgba(34, 211, 238, 0.5)'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    color: tradePassword ? '#22d3ee' : '#888888',
+                    boxShadow: tradePassword ? '0 0 10px rgba(34, 211, 238, 0.2)' : 'none'
+                  }}
+                >
+                  Continue to Preview
+                </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
