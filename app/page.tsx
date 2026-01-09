@@ -71,7 +71,10 @@ export default function Home() {
           </div>
 
           {/* Right side - $Redacted button */}
-          <button
+          <a
+            href="https://pump.fun/coin/HGoUj3YVj6EqG5iYkAf95jLh7KjGH84MuhadENb3pump"
+            target="_blank"
+            rel="noopener noreferrer"
             className="group relative inline-flex items-center gap-2 px-5 py-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
@@ -103,7 +106,7 @@ export default function Home() {
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
               }}
             />
-          </button>
+          </a>
         </div>
       </nav>
 
