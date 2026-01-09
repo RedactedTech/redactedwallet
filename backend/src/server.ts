@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import session from 'express-session';
 import { testConnection, runMigrations } from './config/database';
 import { testSolanaConnection } from './config/solana';
 import authRoutes from './api/routes/auth';
@@ -9,6 +10,7 @@ import tradeRoutes from './api/routes/trades';
 import tokenRoutes from './api/routes/tokens';
 import pumpfunRoutes from './routes/pumpfun.routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import passport from './config/passport';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +50,23 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Session configuration (required for Passport OAuth)
+app.use(session({
+  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'change_this_in_production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'lax',
+    maxAge: 10 * 60 * 1000 // 10 minutes (just for OAuth flow)
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Request logging (development only)
 if (process.env.NODE_ENV === 'development') {

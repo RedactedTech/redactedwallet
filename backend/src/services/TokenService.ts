@@ -126,7 +126,10 @@ export class TokenService {
           tokenInfo.symbol || null,
           tokenInfo.name || null,
           source,
-          JSON.stringify(metadata || {}),
+          JSON.stringify({
+            ...metadata,
+            image_uri: tokenInfo.image_uri
+          }),
         ]
       );
 
@@ -225,7 +228,7 @@ export class TokenService {
    */
   static async fetchTokenMetadata(
     tokenAddress: string
-  ): Promise<{ symbol: string | null; name: string | null; decimals: number }> {
+  ): Promise<{ symbol: string | null; name: string | null; decimals: number; image_uri?: string | null }> {
     try {
       console.log(`📋 Fetching metadata for ${tokenAddress} from DexScreener...`);
 
@@ -258,6 +261,7 @@ export class TokenService {
               symbol: baseToken.symbol || null,
               name: baseToken.name || null,
               decimals: 9, // Default for Solana tokens
+              image_uri: info.imageUrl || bestPair.imageUrl || baseToken.imageUrl || null
             };
           }
         }

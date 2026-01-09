@@ -8,6 +8,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { TransferModal } from '../components/TransferModal';
+import { Navbar } from '../components/Navbar';
 import { apiGet, apiPost, parseApiResponse } from '../utils/api';
 
 interface User {
@@ -323,36 +324,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-8">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Image
-                src="/transparentlogo.png"
-                alt="redacted logo"
-                width={40}
-                height={40}
-                className="object-contain"
-              />
-              <h1 className="text-3xl font-semibold text-white">
-                Dashboard
-              </h1>
-            </div>
-            <p className="text-gray-400 text-sm">
-              Welcome back, {user?.email}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={handleLogout}>
-              Logout
-            </Button>
-          </div>
+    <div className="min-h-screen">
+      <Navbar
+        showDashboardLinks
+        quickActions={
+          <Button variant="secondary" onClick={handleLogout}>
+            Logout
+          </Button>
+        }
+      />
+
+      <div className="p-8">
+        {/* Page Header */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <h1 className="text-3xl font-semibold text-white mb-2">
+            Dashboard
+          </h1>
+          <p className="text-gray-400">
+            Welcome back, {user?.email}
+          </p>
         </div>
 
-        {/* Social Links */}
-        <div className="flex flex-wrap gap-4 justify-center items-center mt-6">
+        {/* Social Links (Hidden - now in Navbar) */}
+        <div className="hidden flex-wrap gap-4 justify-center items-center mt-6">
           <a
             href="https://x.com/RedactedWallet"
             target="_blank"

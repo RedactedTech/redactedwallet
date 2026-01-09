@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { AuthService } from '../../services/AuthService';
 import { authenticate } from '../../middleware/auth';
-import { AuthRequest, CreateUserInput, LoginInput } from '../../types';
+import { AuthRequest, CreateUserInput, LoginInput, OAuthUserProfile } from '../../types';
+import passport from '../../config/passport';
 
 const router = Router();
 
@@ -275,5 +276,85 @@ router.post('/backup-seed', authenticate, async (req: AuthRequest, res: Response
     }
   }
 });
+
+/**
+ * GET /api/auth/google
+ * Initiates Google OAuth flow
+ */
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false
+}));
+
+/**
+ * GET /api/auth/google/callback
+ * Google OAuth callback handler
+ */
+router.get('/google/callback',
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3500'}/auth/login?error=oauth_failed`
+  }),
+  async (req: Request, res: Response) => {
+    try {
+      const profile = req.user as OAuthUserProfile;
+
+      if (!profile || !profile.email) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/auth/login?error=no_email`
+        );
+      }
+
+      // Check for email collision
+      if (profile.emailCollision) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/auth/login?error=${encodeURIComponent('This email is already registered with a password. Please login with your password.')}`
+        );
+      }
+
+      // Check if user exists
+      const existingUser = await AuthService.getUserByOAuthId('google', profile.id);
+
+      let result;
+      let isNewUser = false;
+
+      if (existingUser) {
+        // Existing user - login
+        result = await AuthService.loginOAuthUser(profile);
+      } else {
+        // New user - register
+        const registerResult = await AuthService.registerOAuthUser(profile);
+        result = registerResult;
+        isNewUser = true;
+      }
+
+      // Encode tokens for URL transport
+      const params = new URLSearchParams({
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
+        user: JSON.stringify(result.user)
+      });
+
+      if (isNewUser && 'generatedPassword' in result) {
+        params.append('generatedPassword', result.generatedPassword);
+        params.append('isNewUser', 'true');
+      }
+
+      if (result.tokens.sessionPassword) {
+        params.append('sessionPassword', result.tokens.sessionPassword);
+      }
+
+      // Redirect to frontend with tokens
+      res.redirect(
+        `${process.env.FRONTEND_URL}/auth/oauth-callback?${params.toString()}`
+      );
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(
+        `${process.env.FRONTEND_URL}/auth/login?error=${encodeURIComponent('An error occurred during authentication. Please try again.')}`
+      );
+    }
+  }
+);
 
 export default router;

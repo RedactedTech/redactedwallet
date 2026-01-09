@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Input } from '../../components/Input';
+import { Navbar } from '../../components/Navbar';
 import { getPumpFunMetadata, getTokenImageUrl } from '../../utils/pumpfun';
 
 interface MonitoredToken {
@@ -348,27 +349,18 @@ export default function TokensPage() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-white mb-2">
-              Monitor Tokens
-            </h1>
-            <p className="text-gray-400">
-              Search and add tokens to your watchlist. Click "Trade" to execute trades.
-            </p>
-          </div>
-          <Link href="/dashboard">
-            <button className="px-4 py-2 rounded-lg transition-colors" style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}>
-              ← Back to Dashboard
-            </button>
-          </Link>
+    <div className="min-h-screen">
+      <Navbar showDashboardLinks />
+
+      <div className="p-8">
+        {/* Page Header */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <h1 className="text-3xl font-semibold text-white mb-2">
+            Monitor Tokens
+          </h1>
+          <p className="text-gray-400">
+            Search and add tokens to your watchlist. Click "Trade" to execute trades.
+          </p>
         </div>
 
         {/* Search Bar */}

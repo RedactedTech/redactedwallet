@@ -62,13 +62,91 @@ router.get('/metadata/:tokenAddress', optionalAuthenticate, async (req: AuthRequ
     const baseToken = bestPair.baseToken;
     const info = bestPair.info || {};
 
+    // Try multiple sources for image URL
+    let imageUri = '';
+    if (info.imageUrl) {
+      imageUri = info.imageUrl;
+    } else if (bestPair.imageUrl) {
+      imageUri = bestPair.imageUrl;
+    } else if (baseToken.imageUrl) {
+      imageUri = baseToken.imageUrl;
+    }
+
+    // If still no image, try DexScreener Token Profiles API
+    if (!imageUri) {
+      try {
+        const profileResponse = await axios.get(
+          `https://api.dexscreener.com/token-profiles/latest/v1`,
+          {
+            timeout: 3000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          }
+        );
+
+        if (profileResponse.data) {
+          const profile = profileResponse.data.find((p: any) => 
+            p.tokenAddress?.toLowerCase() === tokenAddress.toLowerCase()
+          );
+          if (profile?.icon) {
+            imageUri = profile.icon;
+            console.log(`✅ Found image in Token Profiles API`);
+          }
+        }
+      } catch (profileError) {
+        console.log(`Token Profiles API failed, continuing...`);
+      }
+    }
+
+    // If still no image, try Helius DAS API (works for all Solana tokens including pump.fun)
+    if (!imageUri) {
+      try {
+        const heliusUrl = process.env.HELIUS_API_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+        
+        const dasResponse = await axios.post(
+          heliusUrl,
+          {
+            jsonrpc: '2.0',
+            id: 'token-metadata',
+            method: 'getAsset',
+            params: {
+              id: tokenAddress
+            }
+          },
+          {
+            timeout: 5000,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+
+        if (dasResponse.data?.result?.content?.links?.image) {
+          imageUri = dasResponse.data.result.content.links.image;
+          console.log(`✅ Found image via Helius DAS API`);
+        } else if (dasResponse.data?.result?.content?.json_uri) {
+          // Fetch the JSON metadata
+          try {
+            const jsonResponse = await axios.get(dasResponse.data.result.content.json_uri, { timeout: 3000 });
+            if (jsonResponse.data?.image) {
+              imageUri = jsonResponse.data.image;
+              console.log(`✅ Found image in token JSON metadata`);
+            }
+          } catch (jsonError) {
+            console.log(`Failed to fetch JSON metadata`);
+          }
+        }
+      } catch (heliusError: any) {
+        console.log(`Helius DAS API failed:`, heliusError.message);
+      }
+    }
+
     // Format as pump.fun compatible response
     const metadata = {
       mint: tokenAddress,
       name: baseToken?.name || 'Unknown',
       symbol: baseToken?.symbol || 'UNKNOWN',
       description: info.description || '',
-      image_uri: info.imageUrl || '',
+      image_uri: imageUri,
       twitter: info.socials?.find((s: any) => s.type === 'twitter')?.url || '',
       telegram: info.socials?.find((s: any) => s.type === 'telegram')?.url || '',
       website: info.websites?.[0]?.url || ''

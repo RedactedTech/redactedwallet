@@ -449,6 +449,184 @@ export class AuthService {
       // Don't throw - audit logging failure shouldn't break the main flow
     }
   }
+
+  /**
+   * Generates a cryptographically secure random password for OAuth users
+   * Requirements: 32 characters, alphanumeric + symbols
+   */
+  private static generateSecurePassword(): string {
+    const length = 32;
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    const bytes = crypto.randomBytes(length);
+    let password = '';
+
+    for (let i = 0; i < length; i++) {
+      password += charset[bytes[i] % charset.length];
+    }
+
+    return password;
+  }
+
+  /**
+   * Registers a new OAuth user
+   *
+   * Steps:
+   * 1. Generate secure random password (32 chars)
+   * 2. Hash the generated password with bcrypt
+   * 3. Generate master seed
+   * 4. Encrypt master seed with generated password
+   * 5. Store user with oauth_provider and oauth_id
+   * 6. Return tokens + generated password (shown once)
+   */
+  static async registerOAuthUser(profile: { id: string; email: string; name: string }): Promise<{
+    user: UserPublic;
+    tokens: TokenPair;
+    generatedPassword: string;
+  }> {
+    const { id: oauthId, email } = profile;
+
+    // Check if OAuth user already exists
+    const existingOAuthUser = await pool.query(
+      'SELECT id FROM users WHERE oauth_provider = $1 AND oauth_id = $2',
+      ['google', oauthId]
+    );
+
+    if (existingOAuthUser.rows.length > 0) {
+      throw new ValidationError('OAuth user already exists');
+    }
+
+    // Check if email is taken by local user
+    const existingEmailUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (existingEmailUser.rows.length > 0) {
+      throw new ValidationError('Email already registered with password. Please login with your password.');
+    }
+
+    // Generate secure random password (shown once to user)
+    const generatedPassword = this.generateSecurePassword();
+
+    // Hash the generated password
+    const passwordHash = await bcrypt.hash(generatedPassword, this.BCRYPT_ROUNDS);
+
+    // Generate master seed (HD wallet seed)
+    const masterSeed = this.generateMasterSeed();
+
+    // Encrypt master seed with generated password
+    const encryptedSeed = EncryptionService.encrypt(masterSeed, generatedPassword);
+    const packedSeed = EncryptionService.packEncrypted(encryptedSeed);
+
+    // Insert user into database with OAuth fields
+    const result = await pool.query<User>(
+      `INSERT INTO users (
+        email, password_hash, master_seed_encrypted, encryption_salt,
+        wallet_index_counter, oauth_provider, oauth_id
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *`,
+      [
+        email.toLowerCase(),
+        passwordHash,
+        packedSeed,
+        encryptedSeed.salt,
+        0,
+        'google',
+        oauthId
+      ]
+    );
+
+    const user = result.rows[0];
+
+    // Generate tokens (use generated password for session)
+    const accessToken = this.generateAccessToken(user.id, user.email);
+    const refreshToken = await this.generateRefreshToken(user.id);
+    const sessionPassword = this.encryptPasswordForSession(generatedPassword, user.id);
+
+    // Log audit event
+    await this.logAuditEvent(user.id, 'oauth_user_registered', 'user', user.id, {
+      provider: 'google',
+      oauth_id: oauthId
+    });
+
+    return {
+      user: this.sanitizeUser(user),
+      tokens: {
+        accessToken,
+        refreshToken,
+        sessionPassword
+      },
+      generatedPassword // MUST be shown to user immediately
+    };
+  }
+
+  /**
+   * Logs in an existing OAuth user
+   */
+  static async loginOAuthUser(profile: { id: string; email: string }): Promise<{
+    user: UserPublic;
+    tokens: TokenPair;
+  }> {
+    const { id: oauthId } = profile;
+
+    // Find user by OAuth ID
+    const result = await pool.query<User>(
+      `SELECT * FROM users
+       WHERE oauth_provider = $1 AND oauth_id = $2 AND is_active = true`,
+      ['google', oauthId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new AuthenticationError('OAuth user not found');
+    }
+
+    const user = result.rows[0];
+
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = NOW() WHERE id = $1',
+      [user.id]
+    );
+
+    // Generate tokens
+    // NOTE: OAuth users need to provide their generated password for trades
+    // We can't generate sessionPassword here without the user's password
+    // They must manually enter it when executing trades
+    const accessToken = this.generateAccessToken(user.id, user.email);
+    const refreshToken = await this.generateRefreshToken(user.id);
+
+    // Log audit event
+    await this.logAuditEvent(user.id, 'oauth_user_login', 'user', user.id, {
+      provider: 'google'
+    });
+
+    return {
+      user: this.sanitizeUser(user),
+      tokens: {
+        accessToken,
+        refreshToken
+        // sessionPassword is NOT included for returning OAuth users
+        // They must provide their saved password when trading
+      }
+    };
+  }
+
+  /**
+   * Gets user by OAuth provider and ID
+   */
+  static async getUserByOAuthId(provider: string, oauthId: string): Promise<UserPublic | null> {
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE oauth_provider = $1 AND oauth_id = $2 AND is_active = true',
+      [provider, oauthId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return this.sanitizeUser(result.rows[0]);
+  }
 }
 
 export default AuthService;

@@ -33,17 +33,15 @@ export async function getPumpFunMetadata(
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const accessToken = localStorage.getItem('accessToken');
 
-    if (!accessToken) {
-      console.warn('No access token available for metadata fetch');
-      return null;
+    const headers: HeadersInit = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
     const response = await fetch(
       `${apiUrl}/api/pumpfun/metadata/${tokenAddress}`,
       {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+        headers
       }
     );
 

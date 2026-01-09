@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import { Navbar } from '../components/Navbar';
 
 // Phase data structure
 const roadmapPhases = [
@@ -194,8 +195,6 @@ const PhaseCard = ({ phase, index }: { phase: typeof roadmapPhases[0]; index: nu
 };
 
 export default function Roadmap() {
-  const [redactedButtonPressed, setRedactedButtonPressed] = useState(false);
-
   return (
     <div className="min-h-screen">
       <style jsx>{`
@@ -235,103 +234,7 @@ export default function Roadmap() {
         }
       `}</style>
 
-      {/* Header */}
-      <div className="px-6 py-6 flex items-center justify-between max-w-7xl mx-auto">
-        <Link href="/" className="group">
-          <div className="relative">
-            <Image
-              src="/icon.png"
-              alt="Redacted"
-              width={48}
-              height={48}
-              className="transition-transform duration-300 group-hover:scale-110"
-            />
-            <div
-              className="absolute inset-0 blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-300"
-              style={{
-                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%)'
-              }}
-            />
-          </div>
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="text-xs font-medium">Back to Home</span>
-          </Link>
-
-          {/* Social Links */}
-          <a
-            href="https://x.com/redactedtrade"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            <span className="text-xs font-medium">Follow us</span>
-          </a>
-
-          <Link
-            href="/whitepaper"
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-xs font-medium">White Paper</span>
-          </Link>
-
-          <button
-            className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
-              color: '#000000',
-              boxShadow: redactedButtonPressed
-                ? '0 2px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.25)'
-                : '0 3px 0 #888888, 0 4px 8px rgba(0, 0, 0, 0.3)',
-              transform: redactedButtonPressed ? 'translateY(1px)' : 'translateY(0)',
-              fontWeight: '600'
-            }}
-            onMouseDown={() => setRedactedButtonPressed(true)}
-            onMouseUp={() => setRedactedButtonPressed(false)}
-            onMouseLeave={() => setRedactedButtonPressed(false)}
-          >
-            <span className="relative z-10 text-xs font-bold">$Redacted</span>
-            <svg className="w-3 h-3 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
-              }}
-            />
-          </button>
-        </div>
-      </div>
+      <Navbar />
 
       {/* Hero Section */}
       <div className="px-6 py-20 max-w-7xl mx-auto text-center">

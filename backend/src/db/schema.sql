@@ -203,7 +203,7 @@ CREATE TABLE trades (
     created_at TIMESTAMP DEFAULT NOW(),
 
     CHECK (status IN ('pending', 'open', 'closed', 'failed')),
-    CHECK (exit_reason IN ('take_profit', 'stop_loss', 'trailing_stop', 'manual', 'timeout', 'error') OR exit_reason IS NULL)
+    CHECK (exit_reason IN ('take_profit', 'stop_loss', 'trailing_stop', 'manual', 'timeout', 'error', 'balance_reconciliation') OR exit_reason IS NULL)
 );
 
 CREATE INDEX idx_trades_user ON trades(user_id);

@@ -37,6 +37,30 @@ export interface LoginInput {
 }
 
 // ============================================================
+// OAUTH TYPES
+// ============================================================
+
+export interface UserWithOAuth extends User {
+  oauth_provider?: 'google' | 'local' | null;
+  oauth_id?: string | null;
+}
+
+export interface OAuthUserProfile {
+  id: string; // Google user ID
+  email: string;
+  name: string;
+  picture?: string;
+  emailCollision?: boolean; // Flag for email already registered
+}
+
+export interface OAuthRegistrationResult {
+  user: UserPublic;
+  tokens: TokenPair;
+  generatedPassword?: string; // Only present for new OAuth users
+  isNewUser: boolean;
+}
+
+// ============================================================
 // JWT TYPES
 // ============================================================
 
