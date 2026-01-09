@@ -157,7 +157,7 @@ function TradePageContent() {
           throw new Error(walletData.error || 'Failed to get trading wallet');
         }
 
-        ghostWalletId = walletData.wallet.id;
+        ghostWalletId = walletData.data.id;
       }
 
       // Prepare trade payload

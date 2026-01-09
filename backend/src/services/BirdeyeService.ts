@@ -48,7 +48,8 @@ export class BirdeyeService {
         throw new Error('Birdeye API key not configured');
       }
 
-      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/v3/token/trending`, {
+      // Use the token list endpoint with sorting
+      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/tokenlist`, {
         headers: {
           'X-API-KEY': BIRDEYE_API_KEY,
         },
@@ -60,24 +61,24 @@ export class BirdeyeService {
         },
       });
 
-      if (!response.data || !response.data.data) {
+      if (!response.data || !response.data.data || !response.data.data.tokens) {
         console.error('Birdeye API returned unexpected format:', response.data);
         return [];
       }
 
-      const tokens: BirdeyeToken[] = response.data.data.tokens.map((token: BirdeyeTopToken) => ({
+      const tokens: BirdeyeToken[] = response.data.data.tokens.map((token: any) => ({
         address: token.address,
-        symbol: token.symbol,
-        name: token.name,
-        decimals: token.decimals,
-        logoURI: token.icon,
-        liquidity: token.liquidity || 0,
+        symbol: token.symbol || 'UNKNOWN',
+        name: token.name || token.symbol || 'Unknown Token',
+        decimals: token.decimals || 9,
+        logoURI: token.logoURI || token.icon,
+        liquidity: token.liquidity || token.v24hUSD || 0,
         price: token.price || 0,
-        priceChange24h: token.v24hChangePercent || 0,
-        volume24h: token.v24hUSD || 0,
+        priceChange24h: token.v24hChangePercent || token.priceChange24h || 0,
+        volume24h: token.v24hUSD || token.volume24h || 0,
         volume24hChangePercent: token.v24hChangePercent || 0,
-        marketCap: token.mc || 0,
-        holders: token.holder,
+        marketCap: token.mc || token.marketCap || 0,
+        holders: token.holder || token.holders,
       }));
 
       return tokens;
@@ -85,6 +86,7 @@ export class BirdeyeService {
       console.error('Error fetching top tokens from Birdeye:', error.message);
       if (error.response) {
         console.error('Birdeye API response:', error.response.data);
+        console.error('Birdeye API status:', error.response.status);
       }
       throw new Error('Failed to fetch top tokens from Birdeye');
     }
