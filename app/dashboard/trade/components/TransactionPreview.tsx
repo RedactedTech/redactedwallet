@@ -47,7 +47,15 @@ export default function TransactionPreview({ formData, onCancel, onConfirm, isEx
       const data = await response.json();
       if (response.ok) {
         const wallet = data.data.find((w: any) => w.id === formData.selectedWalletId);
-        setWalletInfo(wallet);
+        if (wallet) {
+          // Transform snake_case to camelCase
+          setWalletInfo({
+            id: wallet.id,
+            publicKey: wallet.public_key,
+            balance: 0, // Would need separate balance fetch
+            status: wallet.status
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching wallet info:', error);

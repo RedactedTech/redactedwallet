@@ -47,7 +47,7 @@ export default function TradeForm({ formData, onFormChange, onPreview }: TradeFo
       const accessToken = localStorage.getItem('accessToken');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-      const response = await fetch(`${apiUrl}/api/wallets`, {
+      const response = await fetch(`${apiUrl}/api/wallets?status=active`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -55,7 +55,14 @@ export default function TradeForm({ formData, onFormChange, onPreview }: TradeFo
 
       const data = await response.json();
       if (response.ok) {
-        setWallets(data.data || []);
+        // Transform backend snake_case to frontend camelCase
+        const transformedWallets = (data.data || []).map((wallet: any) => ({
+          id: wallet.id,
+          publicKey: wallet.public_key,
+          balance: 0, // Balance will be fetched separately if needed
+          status: wallet.status
+        }));
+        setWallets(transformedWallets);
       }
     } catch (error) {
       console.error('Error fetching wallets:', error);
