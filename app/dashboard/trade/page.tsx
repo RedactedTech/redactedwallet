@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '../../components/Card';
 import TokenSearch from './components/TokenSearch';
 import TradeForm from './components/TradeForm';
 import TransactionPreview from './components/TransactionPreview';
+import { getPumpFunMetadata } from '../../utils/pumpfun';
 
 interface SelectedToken {
   mint: string;
@@ -27,7 +29,9 @@ interface TradeFormData {
 }
 
 export default function TradePage() {
+  const searchParams = useSearchParams();
   const [selectedToken, setSelectedToken] = useState<SelectedToken | null>(null);
+  const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [formData, setFormData] = useState<TradeFormData>({
     token: null,
     amountSol: '',
@@ -39,6 +43,34 @@ export default function TradePage() {
     useJitoBundle: true
   });
   const [showPreview, setShowPreview] = useState(false);
+
+  // Load token from URL parameter
+  useEffect(() => {
+    const loadTokenFromUrl = async () => {
+      const tokenAddress = searchParams.get('token');
+      if (!tokenAddress) return;
+
+      setIsLoadingToken(true);
+      try {
+        const metadata = await getPumpFunMetadata(tokenAddress);
+        if (metadata) {
+          const token: SelectedToken = {
+            mint: metadata.mint,
+            name: metadata.name,
+            symbol: metadata.symbol,
+            image_uri: metadata.image_uri
+          };
+          handleTokenSelect(token);
+        }
+      } catch (error) {
+        console.error('Failed to load token from URL:', error);
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+
+    loadTokenFromUrl();
+  }, [searchParams]);
 
   const handleTokenSelect = (token: SelectedToken) => {
     setSelectedToken(token);
@@ -95,10 +127,17 @@ export default function TradePage() {
               {/* Token Search */}
               <div>
                 <h2 className="text-xl font-semibold text-white mb-4">Select Token</h2>
-                <TokenSearch
-                  selectedToken={selectedToken}
-                  onTokenSelect={handleTokenSelect}
-                />
+                {isLoadingToken ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                    <p className="text-gray-400 ml-3">Loading token...</p>
+                  </div>
+                ) : (
+                  <TokenSearch
+                    selectedToken={selectedToken}
+                    onTokenSelect={handleTokenSelect}
+                  />
+                )}
               </div>
 
               {/* Trade Form */}

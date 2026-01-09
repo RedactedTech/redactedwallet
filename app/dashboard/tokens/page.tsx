@@ -39,6 +39,8 @@ export default function TokensPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [addingTokens, setAddingTokens] = useState<Set<string>>(new Set());
   const [metadataCache, setMetadataCache] = useState<TokenMetadataCache>({});
 
   useEffect(() => {
@@ -52,7 +54,20 @@ export default function TokensPage() {
         // Skip if already cached
         if (metadataCache[token.token_address]) continue;
 
-        // Only fetch metadata for pump_fun tokens
+        // First, check if token has metadata in database
+        const dbImageUri = token.metadata?.image_uri;
+        if (dbImageUri) {
+          setMetadataCache(prev => ({
+            ...prev,
+            [token.token_address]: {
+              imageUrl: getTokenImageUrl(dbImageUri, token.token_symbol || undefined),
+              name: token.token_name
+            }
+          }));
+          continue;
+        }
+
+        // For pump_fun tokens without DB metadata, try fetching from API
         if (token.source === 'pump_fun') {
           const metadata = await getPumpFunMetadata(token.token_address);
           if (metadata) {
@@ -74,7 +89,7 @@ export default function TokensPage() {
             }));
           }
         } else {
-          // For non-pump.fun tokens, use fallback
+          // For other tokens, use fallback
           setMetadataCache(prev => ({
             ...prev,
             [token.token_address]: {
@@ -112,7 +127,8 @@ export default function TokensPage() {
       const accessToken = localStorage.getItem('accessToken');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-      const response = await fetch(`${apiUrl}/api/tokens/trending?limit=20`, {
+      // Fetch ALL monitored tokens, not just trending ones
+      const response = await fetch(`${apiUrl}/api/tokens?limit=50`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -123,6 +139,8 @@ export default function TokensPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch tokens');
       }
+
+      console.log('Fetched tokens:', data.data); // Debug log
 
       setTokens(data.data || []);
       setFilteredTokens(data.data || []);
@@ -222,20 +240,29 @@ export default function TokensPage() {
     return <Badge variant="info">{sourceLabels[source] || source}</Badge>;
   };
 
-  const formatPrice = (price: number | null) => {
-    if (price === null) return 'N/A';
-    if (price < 0.01) return `$${price.toFixed(6)}`;
-    return `$${price.toFixed(4)}`;
+  const formatPrice = (price: number | string | null) => {
+    if (price === null || price === undefined) return 'N/A';
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numPrice)) return 'N/A';
+    if (numPrice < 0.01) return `$${numPrice.toFixed(6)}`;
+    return `$${numPrice.toFixed(4)}`;
   };
 
-  const formatVolume = (volume: number | null) => {
-    if (volume === null) return 'N/A';
-    if (volume >= 1000000) return `$${(volume / 1000000).toFixed(2)}M`;
-    if (volume >= 1000) return `$${(volume / 1000).toFixed(2)}K`;
-    return `$${volume.toFixed(2)}`;
+  const formatVolume = (volume: number | string | null) => {
+    if (volume === null || volume === undefined) return 'N/A';
+    const numVolume = typeof volume === 'string' ? parseFloat(volume) : volume;
+    if (isNaN(numVolume)) return 'N/A';
+    if (numVolume >= 1000000) return `$${(numVolume / 1000000).toFixed(2)}M`;
+    if (numVolume >= 1000) return `$${(numVolume / 1000).toFixed(2)}K`;
+    return `$${numVolume.toFixed(2)}`;
   };
 
   const addTokenToMonitor = async (tokenAddress: string) => {
+    // Mark this token as being added
+    setAddingTokens(prev => new Set(prev).add(tokenAddress));
+    setError('');
+    setSuccessMessage('');
+
     try {
       const accessToken = localStorage.getItem('accessToken');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -258,11 +285,26 @@ export default function TokensPage() {
         throw new Error(data.error || 'Failed to add token');
       }
 
+      // Show success message
+      setSuccessMessage(`Token added to monitoring successfully!`);
+
       // Refresh tokens list
       await fetchTrendingTokens();
-      setSearchQuery(''); // Clear search to show all monitored tokens
+
+      // Clear search to show all monitored tokens
+      setSearchQuery('');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add token to monitoring');
+    } finally {
+      // Remove from adding set
+      setAddingTokens(prev => {
+        const next = new Set(prev);
+        next.delete(tokenAddress);
+        return next;
+      });
     }
   };
 
@@ -276,7 +318,7 @@ export default function TokensPage() {
               Monitor Tokens
             </h1>
             <p className="text-gray-400">
-              Track trending tokens and trading opportunities
+              Search and add tokens to your watchlist. Click "Trade" to execute trades.
             </p>
           </div>
           <Link href="/dashboard">
@@ -306,6 +348,13 @@ export default function TokensPage() {
             <p className="text-red-500 text-sm">{error}</p>
           </div>
         )}
+
+        {/* Success Display */}
+        {successMessage && (
+          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 mb-6">
+            <p className="text-green-500 text-sm">{successMessage}</p>
+          </div>
+        )}
       </div>
 
       {/* Tokens Table */}
@@ -317,9 +366,19 @@ export default function TokensPage() {
             </div>
           ) : filteredTokens.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-400">
-                {searchQuery ? 'No tokens found matching your search' : 'No trending tokens available'}
+              <p className="text-gray-400 mb-4">
+                {searchQuery ? 'No tokens found matching your search' : 'No monitored tokens yet'}
               </p>
+              {!searchQuery && (
+                <div className="text-gray-500 text-sm">
+                  <p className="mb-2">Search for a token by:</p>
+                  <ul className="list-disc list-inside">
+                    <li>Pasting a Solana token contract address</li>
+                    <li>Entering a token symbol (e.g., BONK, WIF)</li>
+                  </ul>
+                  <p className="mt-4">Then click "+ Add to Monitor" to add it to your watchlist</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -331,7 +390,7 @@ export default function TokensPage() {
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">24h Volume</th>
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Risk</th>
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Source</th>
-                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Actions</th>
+                    <th className="text-right py-4 px-4 text-sm font-semibold text-gray-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,21 +441,45 @@ export default function TokensPage() {
                           {getSourceBadge(token.source)}
                         </td>
                         <td className="py-4 px-4">
-                          {(token as any)._isSearchResult ? (
-                            <button
-                              onClick={() => addTokenToMonitor(token.token_address)}
-                              className="px-3 py-1 text-sm rounded-lg transition-colors"
-                              style={{
-                                background: 'rgba(34, 211, 238, 0.1)',
-                                border: '1px solid rgba(34, 211, 238, 0.3)',
-                                color: '#22d3ee'
-                              }}
-                            >
-                              Add to Monitor
-                            </button>
-                          ) : (
-                            <span className="text-gray-500 text-sm">Monitored</span>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {(token as any)._isSearchResult ? (
+                              <button
+                                onClick={() => addTokenToMonitor(token.token_address)}
+                                disabled={addingTokens.has(token.token_address)}
+                                className="px-3 py-1 text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                  background: 'rgba(34, 211, 238, 0.1)',
+                                  border: '1px solid rgba(34, 211, 238, 0.3)',
+                                  color: '#22d3ee'
+                                }}
+                              >
+                                {addingTokens.has(token.token_address) ? (
+                                  <span className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-cyan-400"></div>
+                                    Adding...
+                                  </span>
+                                ) : (
+                                  '+ Add to Monitor'
+                                )}
+                              </button>
+                            ) : (
+                              <>
+                                <Link href={`/dashboard/trade?token=${token.token_address}`}>
+                                  <button
+                                    className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:scale-105"
+                                    style={{
+                                      background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.1))',
+                                      border: '1px solid rgba(34, 211, 238, 0.5)',
+                                      color: '#22d3ee',
+                                      boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
+                                    }}
+                                  >
+                                    🚀 Trade
+                                  </button>
+                                </Link>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
