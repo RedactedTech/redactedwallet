@@ -1,6 +1,7 @@
 # Frontend service configuration
 [build]
 builder = "nixpacks"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "next start -p $PORT"
