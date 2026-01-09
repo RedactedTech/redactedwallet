@@ -21,12 +21,11 @@ interface TransactionPreviewProps {
   formData: TradeFormData;
   onCancel: () => void;
   onConfirm: () => void;
+  isExecuting?: boolean;
 }
 
-export default function TransactionPreview({ formData, onCancel, onConfirm }: TransactionPreviewProps) {
-  const [isExecuting, setIsExecuting] = useState(false);
+export default function TransactionPreview({ formData, onCancel, onConfirm, isExecuting = false }: TransactionPreviewProps) {
   const [walletInfo, setWalletInfo] = useState<any>(null);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (formData.walletSelection === 'manual' && formData.selectedWalletId) {
@@ -55,79 +54,6 @@ export default function TransactionPreview({ formData, onCancel, onConfirm }: Tr
     }
   };
 
-  const handleConfirm = async () => {
-    setIsExecuting(true);
-    setError('');
-
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      const sessionPassword = localStorage.getItem('sessionPassword');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-      if (!sessionPassword) {
-        throw new Error('Session password not found. Please log in again.');
-      }
-
-      // First, get the wallet to use
-      let ghostWalletId = formData.selectedWalletId;
-
-      if (formData.walletSelection === 'auto') {
-        // Request a trading wallet
-        const walletResponse = await fetch(`${apiUrl}/api/wallets/trading-wallet`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ strategyId: null })
-        });
-
-        const walletData = await walletResponse.json();
-
-        if (!walletResponse.ok) {
-          throw new Error(walletData.error || 'Failed to get trading wallet');
-        }
-
-        ghostWalletId = walletData.wallet.id;
-      }
-
-      // Execute the trade
-      const tradeResponse = await fetch(`${apiUrl}/api/trades/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          ghostWalletId,
-          tokenAddress: formData.token.mint,
-          entryAmountSol: parseFloat(formData.amountSol),
-          maxSlippageBps: parseInt(formData.maxSlippageBps),
-          takeProfitPct: parseFloat(formData.takeProfitPct),
-          stopLossPct: parseFloat(formData.stopLossPct),
-          trailingStopPct: parseFloat(formData.trailingStopPct),
-          useJitoBundle: formData.useJitoBundle,
-          sessionPassword
-        })
-      });
-
-      const tradeData = await tradeResponse.json();
-
-      if (!tradeResponse.ok) {
-        throw new Error(tradeData.error || 'Failed to execute trade');
-      }
-
-      // Success! Show success message and redirect
-      alert(`Trade executed successfully!\n\nTransaction: ${tradeData.txHash}\n\nView on Solscan: https://solscan.io/tx/${tradeData.txHash}`);
-
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
-    } catch (err) {
-      console.error('Trade execution error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to execute trade');
-      setIsExecuting(false);
-    }
-  };
 
   const slippagePercent = (parseInt(formData.maxSlippageBps) / 100).toFixed(2);
 
@@ -228,13 +154,6 @@ export default function TransactionPreview({ formData, onCancel, onConfirm }: Tr
           </div>
         </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-red-500 text-sm">{error}</p>
-          </div>
-        )}
-
         {/* Action Buttons */}
         <div className="flex gap-4">
           <Button
@@ -251,11 +170,18 @@ export default function TransactionPreview({ formData, onCancel, onConfirm }: Tr
           </Button>
           <Button
             type="button"
-            onClick={handleConfirm}
+            onClick={onConfirm}
             disabled={isExecuting}
             className="flex-1"
           >
-            {isExecuting ? 'Executing Trade...' : 'Confirm Trade'}
+            {isExecuting ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Executing Trade...
+              </span>
+            ) : (
+              'Confirm Trade'
+            )}
           </Button>
         </div>
       </div>
