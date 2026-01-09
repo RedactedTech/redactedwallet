@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { apiGet, apiPost, parseApiResponse } from '../utils/api';
 
 interface User {
   id: string;
@@ -51,6 +52,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const [error, setError] = useState('');
+  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
+  const [createWalletPassword, setCreateWalletPassword] = useState('');
   const [showDrainModal, setShowDrainModal] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [drainDestination, setDrainDestination] = useState('');
@@ -95,62 +98,72 @@ export default function DashboardPage() {
 
     try {
       // Fetch wallet stats
-      const walletStatsRes = await fetch(`${API_URL}/api/wallets/stats`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const walletStatsRes = await apiGet('/api/wallets/stats');
       if (walletStatsRes.ok) {
-        const data = await walletStatsRes.json();
-        setWalletStats(data.data);
+        const walletStatsData = await parseApiResponse(walletStatsRes);
+        setWalletStats(walletStatsData);
       }
 
       // Fetch trade stats
-      const tradeStatsRes = await fetch(`${API_URL}/api/trades/stats`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const tradeStatsRes = await apiGet('/api/trades/stats');
       if (tradeStatsRes.ok) {
-        const data = await tradeStatsRes.json();
-        setTradeStats(data.data);
+        const tradeStatsData = await parseApiResponse(tradeStatsRes);
+        setTradeStats(tradeStatsData);
       }
 
       // Fetch wallets
-      const walletsRes = await fetch(`${API_URL}/api/wallets?status=active`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const walletsRes = await apiGet('/api/wallets?status=active');
       if (walletsRes.ok) {
-        const data = await walletsRes.json();
-        setWallets(data.data);
+        const walletsData = await parseApiResponse(walletsRes);
+        setWallets(walletsData);
       }
     } catch (err) {
       console.error('Error loading dashboard data:', err);
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please try logging in again.');
     }
+  };
+
+  const handleOpenCreateWalletModal = () => {
+    setShowCreateWalletModal(true);
+    setCreateWalletPassword('');
+    setError('');
+  };
+
+  const handleCloseCreateWalletModal = () => {
+    setShowCreateWalletModal(false);
+    setCreateWalletPassword('');
+    setError('');
   };
 
   const handleCreateWallet = async () => {
     const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) return;
+    if (!accessToken) {
+      setError('Session expired. Please log in again.');
+      router.push('/auth/login');
+      return;
+    }
+
+    if (!createWalletPassword) {
+      setError('Password is required');
+      return;
+    }
 
     setIsCreatingWallet(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/wallets/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
+      const response = await apiPost('/api/wallets/create', {
+        password: createWalletPassword
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || 'Failed to create wallet');
       }
 
       // Reload dashboard data
       await loadDashboardData();
+      handleCloseCreateWalletModal();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wallet');
     } finally {
@@ -164,19 +177,14 @@ export default function DashboardPage() {
     // Call logout API
     if (accessToken) {
       try {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
+        await apiPost('/api/auth/logout', {});
       } catch (err) {
         console.error('Logout API error:', err);
       }
     }
 
     // Clear local storage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    localStorage.clear();
     router.push('/auth/login');
   };
 
@@ -208,23 +216,19 @@ export default function DashboardPage() {
     if (!selectedWallet) return;
 
     const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) return;
+    if (!accessToken) {
+      setError('Session expired. Please log in again.');
+      return;
+    }
 
     setIsDraining(true);
     setError('');
     setDrainSuccess('');
 
     try {
-      const response = await fetch(`${API_URL}/api/wallets/${selectedWallet.id}/drain`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          destinationAddress: drainDestination,
-          password: drainPassword
-        })
+      const response = await apiPost(`/api/wallets/${selectedWallet.id}/drain`, {
+        destinationAddress: drainDestination,
+        password: drainPassword
       });
 
       const data = await response.json();
@@ -256,21 +260,17 @@ export default function DashboardPage() {
 
   const handleBackupSeed = async () => {
     const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) return;
+    if (!accessToken) {
+      setError('Session expired. Please log in again.');
+      return;
+    }
 
     setIsLoadingBackup(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/backup-seed`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          password: backupPassword
-        })
+      const response = await apiPost('/api/auth/backup-seed', {
+        password: backupPassword
       });
 
       const data = await response.json();
@@ -591,8 +591,7 @@ export default function DashboardPage() {
           </h2>
           <Button
             variant="primary"
-            onClick={handleCreateWallet}
-            isLoading={isCreatingWallet}
+            onClick={handleOpenCreateWalletModal}
           >
             + Create Wallet
           </Button>
@@ -613,8 +612,7 @@ export default function DashboardPage() {
             </p>
             <Button
               variant="primary"
-              onClick={handleCreateWallet}
-              isLoading={isCreatingWallet}
+              onClick={handleOpenCreateWalletModal}
             >
               Create Your First Wallet
             </Button>
@@ -784,6 +782,83 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Create Wallet Modal */}
+      {showCreateWalletModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Ghost Wallet
+                </h3>
+                <button
+                  onClick={handleCloseCreateWalletModal}
+                  className="text-gray-400 hover:text-white"
+                  disabled={isCreatingWallet}
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-300">
+                A new ghost wallet will be derived from your master seed using BIP44 standard.
+                Enter your password to create the wallet.
+              </p>
+
+              {error && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Your Password
+                </label>
+                <input
+                  type="password"
+                  value={createWalletPassword}
+                  onChange={(e) => setCreateWalletPassword(e.target.value)}
+                  placeholder="Enter your account password"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                  disabled={isCreatingWallet}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateWallet()}
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Required to derive the wallet from your master seed
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleCloseCreateWalletModal}
+                  className="flex-1"
+                  disabled={isCreatingWallet}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleCreateWallet}
+                  className="flex-1"
+                  isLoading={isCreatingWallet}
+                  disabled={!createWalletPassword}
+                >
+                  Create Wallet
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Backup Seed Phrase Modal */}
       {showBackupModal && (
