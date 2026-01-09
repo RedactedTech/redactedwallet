@@ -542,6 +542,68 @@ export class TradeService {
     }
   }
 
+  /**
+   * Close all open trades for a specific token in a wallet
+   */
+  static async closeTradesByToken(
+    userId: string,
+    ghostWalletId: string,
+    tokenAddress: string,
+    sessionPassword: string
+  ): Promise<{
+    closedCount: number;
+    failedCount: number;
+    totalSolReceived: number;
+    trades: Trade[];
+  }> {
+    // Find all open trades for this token and wallet
+    const tradesResult = await pool.query(
+      `SELECT * FROM trades
+       WHERE user_id = $1
+         AND ghost_wallet_id = $2
+         AND token_address = $3
+         AND status = 'open'
+       ORDER BY entry_timestamp ASC`,
+      [userId, ghostWalletId, tokenAddress]
+    );
+
+    const trades = tradesResult.rows;
+
+    if (trades.length === 0) {
+      throw new ValidationError('No open trades found for this token');
+    }
+
+    const results = {
+      closedCount: 0,
+      failedCount: 0,
+      totalSolReceived: 0,
+      trades: [] as Trade[],
+    };
+
+    // Close each trade
+    for (const trade of trades) {
+      try {
+        const closedTrade = await this.closeTrade(
+          trade.id,
+          userId,
+          sessionPassword,
+          'manual'
+        );
+
+        results.closedCount++;
+        results.totalSolReceived += parseFloat(closedTrade.exit_amount_sol || '0');
+        results.trades.push(closedTrade);
+
+        console.log(`✅ Closed trade ${trade.id} for token ${tokenAddress}`);
+      } catch (error: any) {
+        console.error(`❌ Failed to close trade ${trade.id}:`, error.message);
+        results.failedCount++;
+      }
+    }
+
+    return results;
+  }
+
   // ============================================================
   // TRADE RETRIEVAL
   // ============================================================

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Input } from '../../components/Input';
-import { Navbar } from '../../components/Navbar';
 import { getPumpFunMetadata, getTokenImageUrl } from '../../utils/pumpfun';
 
 interface MonitoredToken {
@@ -349,12 +348,10 @@ export default function TokensPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <Navbar showDashboardLinks />
-
+    <>
       <div className="p-8">
         {/* Page Header */}
-        <div className="max-w-7xl mx-auto mb-8">
+        <div className="max-w-7xl mx-auto mb-8 text-center">
           <h1 className="text-3xl font-semibold text-white mb-2">
             Monitor Tokens
           </h1>
@@ -364,7 +361,7 @@ export default function TokensPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-6 max-w-lg mx-auto">
           <Input
             type="text"
             placeholder="Search by symbol, name, or address..."
@@ -391,7 +388,7 @@ export default function TokensPage() {
       {/* Top Trending Tokens from Birdeye */}
       {trendingTokens.length > 0 && (
         <div className="max-w-7xl mx-auto mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4 text-center">
             🔥 Top Trending Tokens (Birdeye)
           </h2>
           <Card>
@@ -486,7 +483,7 @@ export default function TokensPage() {
 
       {/* Monitored Tokens Table */}
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-xl font-semibold text-white mb-4">
+        <h2 className="text-xl font-semibold text-white mb-4 text-center">
           Your Monitored Tokens
         </h2>
         <Card>
@@ -620,6 +617,6 @@ export default function TokensPage() {
           )}
         </Card>
       </div>
-    </div>
+    </>
   );
 }

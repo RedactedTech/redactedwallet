@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function Badge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={cn('inline-flex items-center rounded-full border font-medium', variantStyles[variant], sizeStyles[size], className)}
     >
       {children}
     </span>

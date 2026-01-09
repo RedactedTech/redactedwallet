@@ -4,7 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '../../components/Card';
-import { Navbar } from '../../components/Navbar';
 import TokenSearch from './components/TokenSearch';
 import TradeForm from './components/TradeForm';
 import TransactionPreview from './components/TransactionPreview';
@@ -220,9 +219,7 @@ function TradePageContent() {
   };
 
   return (
-    <div className="min-h-screen">
-      <Navbar showDashboardLinks />
-
+    <>
       <div className="p-8">
         {/* Page Header */}
         <div className="max-w-7xl mx-auto mb-8">
@@ -381,7 +378,7 @@ function TradePageContent() {
         </div>
       )}
     </div>
-    </div>
+    </>
   );
 }
 

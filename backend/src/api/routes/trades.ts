@@ -236,4 +236,51 @@ router.get('/:id/exit-conditions', authenticate, async (req: AuthRequest, res: R
   }
 });
 
+/**
+ * POST /api/trades/close-by-token
+ * Close all open trades for a specific token in a wallet
+ */
+router.post('/close-by-token', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { ghostWalletId, tokenAddress, sessionPassword } = req.body;
+
+    // Validation
+    if (!ghostWalletId || !tokenAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: ghostWalletId, tokenAddress',
+      });
+    }
+
+    if (!sessionPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing sessionPassword - please login again',
+      });
+    }
+
+    const result = await TradeService.closeTradesByToken(
+      userId,
+      ghostWalletId,
+      tokenAddress,
+      sessionPassword
+    );
+
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      data: result,
+      message: `Successfully closed ${result.closedCount} trade(s)`,
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('Error closing trades by token:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 export default router;

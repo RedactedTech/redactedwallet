@@ -639,6 +639,179 @@ export class WalletService {
   }
 
   // ============================================================
+  // PORTFOLIO
+  // ============================================================
+
+  /**
+   * Get portfolio overview with holdings across all wallets
+   */
+  static async getPortfolio(userId: string): Promise<
+    Array<{
+      walletId: string;
+      walletAddress: string;
+      walletIndex: number;
+      holdings: Array<{
+        mint: string;
+        symbol: string | null;
+        name: string | null;
+        balance: number;
+        decimals: number;
+        uiAmount: number;
+        currentPrice: number | null;
+        currentValueUsd: number | null;
+        averageEntryPrice: number | null;
+        totalInvestedUsd: number | null;
+        pnlUsd: number | null;
+        pnlPercentage: number | null;
+        imageUri: string | null;
+      }>;
+      totalValueUsd: number;
+      totalPnlUsd: number;
+    }>
+  > {
+    // Get all active wallets for the user
+    const wallets = await this.getActiveWallets(userId);
+    console.log(`📊 Found ${wallets.length} active wallet(s) for user ${userId}`);
+    const portfolios = [];
+
+    // Import TokenService dynamically to avoid circular dependency
+    const { TokenService } = await import('./TokenService');
+
+    for (const wallet of wallets) {
+      try {
+        console.log(`🔍 Processing wallet ${wallet.public_key.slice(0, 8)}...`);
+        const walletPubkey = new PublicKey(wallet.public_key);
+
+        // Get all token accounts for this wallet
+        const tokenAccounts = await SolanaService.getTokenAccounts(walletPubkey);
+        console.log(`  Found ${tokenAccounts.length} token account(s)`);
+
+        // Log each token account details
+        tokenAccounts.forEach((acc, idx) => {
+          console.log(`    Token ${idx + 1}: ${acc.mint.slice(0, 8)}... Balance: ${acc.balance}, uiAmount: ${acc.uiAmount}, Decimals: ${acc.decimals}`);
+        });
+
+        // Filter out zero balances
+        const nonZeroAccounts = tokenAccounts.filter(acc => acc.uiAmount > 0);
+        console.log(`  ${nonZeroAccounts.length} account(s) with non-zero balance`);
+
+        if (nonZeroAccounts.length === 0) {
+          continue; // Skip wallets with no holdings
+        }
+
+        const holdings = [];
+        let totalValueUsd = 0;
+        let totalPnlUsd = 0;
+
+        for (const tokenAccount of nonZeroAccounts) {
+          try {
+            // Fetch token metadata and price
+            const [metadata, metrics] = await Promise.all([
+              TokenService.fetchTokenMetadata(tokenAccount.mint),
+              TokenService.fetchTokenMetrics(tokenAccount.mint)
+            ]);
+
+            const currentPrice = metrics?.price_usd || null;
+            const currentValueUsd = currentPrice ? tokenAccount.uiAmount * currentPrice : null;
+
+            // Calculate average entry price and total invested from trades
+            const tradesResult = await pool.query(
+              `SELECT
+                AVG(entry_price_usd) as avg_entry_price,
+                SUM(entry_amount_sol) as total_sol_invested
+               FROM trades
+               WHERE ghost_wallet_id = $1
+                 AND token_address = $2
+                 AND status = 'open'
+                 AND entry_price_usd IS NOT NULL`,
+              [wallet.id, tokenAccount.mint]
+            );
+
+            const avgEntryPrice = tradesResult.rows[0]?.avg_entry_price
+              ? parseFloat(tradesResult.rows[0].avg_entry_price)
+              : null;
+
+            const totalSolInvested = tradesResult.rows[0]?.total_sol_invested
+              ? parseFloat(tradesResult.rows[0].total_sol_invested)
+              : null;
+
+            // Estimate USD invested (using rough SOL price of $20 if we don't have exact)
+            // TODO: Store SOL price at entry time for more accuracy
+            const totalInvestedUsd = totalSolInvested ? totalSolInvested * 20 : null;
+
+            // Calculate P&L
+            let pnlUsd = null;
+            let pnlPercentage = null;
+
+            if (currentValueUsd !== null && totalInvestedUsd !== null && totalInvestedUsd > 0) {
+              pnlUsd = currentValueUsd - totalInvestedUsd;
+              pnlPercentage = (pnlUsd / totalInvestedUsd) * 100;
+            }
+
+            // Get image URI from metadata
+            const imageUri = (metadata as any).image_uri || null;
+
+            holdings.push({
+              mint: tokenAccount.mint,
+              symbol: metadata.symbol,
+              name: metadata.name,
+              balance: tokenAccount.balance,
+              decimals: tokenAccount.decimals,
+              uiAmount: tokenAccount.uiAmount,
+              currentPrice,
+              currentValueUsd,
+              averageEntryPrice: avgEntryPrice,
+              totalInvestedUsd,
+              pnlUsd,
+              pnlPercentage,
+              imageUri
+            });
+
+            if (currentValueUsd) totalValueUsd += currentValueUsd;
+            if (pnlUsd) totalPnlUsd += pnlUsd;
+
+          } catch (error: any) {
+            console.error(`Error fetching data for token ${tokenAccount.mint}:`, error.message);
+            // Still include the token but with null prices
+            holdings.push({
+              mint: tokenAccount.mint,
+              symbol: null,
+              name: null,
+              balance: tokenAccount.balance,
+              decimals: tokenAccount.decimals,
+              uiAmount: tokenAccount.uiAmount,
+              currentPrice: null,
+              currentValueUsd: null,
+              averageEntryPrice: null,
+              totalInvestedUsd: null,
+              pnlUsd: null,
+              pnlPercentage: null,
+              imageUri: null
+            });
+          }
+        }
+
+        if (holdings.length > 0) {
+          portfolios.push({
+            walletId: wallet.id,
+            walletAddress: wallet.public_key,
+            walletIndex: wallet.wallet_index,
+            holdings,
+            totalValueUsd,
+            totalPnlUsd
+          });
+        }
+      } catch (error: any) {
+        console.error(`Error processing wallet ${wallet.id}:`, error.message);
+        // Continue with other wallets even if one fails
+      }
+    }
+
+    console.log(`✅ Returning ${portfolios.length} portfolio(s) with holdings`);
+    return portfolios;
+  }
+
+  // ============================================================
   // WALLET DRAINING
   // ============================================================
 

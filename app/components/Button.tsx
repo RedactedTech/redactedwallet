@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
@@ -27,13 +28,13 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeStyles = {
-    medium: 'px-6 py-2.5 text-sm',
-    large: 'px-8 py-3 text-base'
+    medium: 'px-4 sm:px-6 py-2 sm:py-2.5 text-sm',
+    large: 'px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base'
   };
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
       disabled={disabled || isLoading}
       {...props}
     >

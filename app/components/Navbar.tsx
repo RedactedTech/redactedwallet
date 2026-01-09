@@ -2,15 +2,44 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ReactNode } from 'react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
 
 interface NavbarProps {
   variant?: 'default' | 'landing';
   showDashboardLinks?: boolean;
   quickActions?: ReactNode;
+  onLogout?: () => void;
 }
 
-export function Navbar({ variant = 'default', showDashboardLinks = false, quickActions }: NavbarProps) {
+export function Navbar({ variant = 'default', showDashboardLinks = false, quickActions, onLogout }: NavbarProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const navClass = variant === 'landing'
     ? "absolute top-0 left-0 right-0 z-20 p-6"
     : "relative z-20 p-6";
@@ -30,9 +59,28 @@ export function Navbar({ variant = 'default', showDashboardLinks = false, quickA
           <span className="text-xl font-bold text-white">Redacted</span>
         </Link>
 
+
+
         {/* Dashboard Links (conditionally shown) */}
         {showDashboardLinks && (
-          <div className="flex items-center gap-3">
+          <>
+            {/* Desktop Navigation - Hidden on mobile */}
+            <div className="hidden md:flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#ffffff'
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="text-sm font-medium">Dashboard</span>
+            </Link>
+
             <Link
               href="/dashboard/portfolio"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
@@ -49,7 +97,7 @@ export function Navbar({ variant = 'default', showDashboardLinks = false, quickA
             </Link>
 
             <Link
-              href="/dashboard"
+              href="/dashboard/tokens"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
               style={{
                 background: 'rgba(255, 255, 255, 0.04)',
@@ -77,54 +125,167 @@ export function Navbar({ variant = 'default', showDashboardLinks = false, quickA
               </svg>
               <span className="text-sm font-medium">Trade</span>
             </Link>
+
+            <Link
+              href="/dashboard/extension"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#ffffff'
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+              </svg>
+              <span className="text-sm font-medium">Extension</span>
+            </Link>
           </div>
+          </>
+        )}
+
+        {/* Mobile Navigation Drawer (Always available on mobile) */}
+        {isMobileMenuOpen && (
+            <div
+              className="fixed inset-0 z-50 md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              {/* Backdrop */}
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+
+              {/* Drawer */}
+              <div
+                className="absolute top-0 right-0 h-full w-64 bg-neutral-900/95 border-l border-white/10 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <div className="flex justify-end p-4">
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-white/10"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Navigation Links */}
+                <div className="flex flex-col gap-2 px-4">
+                  {/* Dashboard links (only shown when showDashboardLinks is true) */}
+                  {showDashboardLinks && (
+                    <>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        <span className="text-base font-medium">Dashboard</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/portfolio"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <span className="text-base font-medium">Portfolio</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/tokens"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-base font-medium">Monitor</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/trade"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span className="text-base font-medium">Trade</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/extension"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                        </svg>
+                        <span className="text-base font-medium">Extension</span>
+                      </Link>
+
+                      {/* Divider after dashboard links */}
+                      <div className="h-px bg-white/10 my-2" />
+                    </>
+                  )}
+
+                  {/* More Links (always shown in mobile menu) */}
+                  <Link
+                    href="/whitepaper"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-base font-medium">White Paper</span>
+                  </Link>
+
+                  <Link
+                    href="/roadmap"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/10"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                    </svg>
+                    <span className="text-base font-medium">Roadmap</span>
+                  </Link>
+
+                  {/* Logout button if provided */}
+                  {onLogout && (
+                    <>
+                      <div className="h-px bg-white/10 my-2" />
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-red-500/10 w-full text-left"
+                      >
+                        <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span className="text-base font-medium text-red-400">Logout</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
         )}
 
         {/* Spacer to push right side to the end */}
         <div className="flex-1" />
 
-        {/* Global Navigation Tabs */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/whitepaper"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-sm font-medium">White Paper</span>
-          </Link>
-
-          <Link
-            href="/roadmap"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#ffffff'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-            </svg>
-            <span className="text-sm font-medium">Roadmap</span>
-          </Link>
-        </div>
-
-        {/* Quick Actions Area (conditionally shown) */}
-        {quickActions && (
-          <div className="flex items-center gap-3">
-            {quickActions}
-          </div>
-        )}
-
-        {/* Social Icons (separated with divider) */}
-        <div className="flex items-center gap-3 pl-6 border-l border-white/10">
+        {/* Social Icons */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="https://x.com/RedactedWallet"
             target="_blank"
@@ -158,40 +319,96 @@ export function Navbar({ variant = 'default', showDashboardLinks = false, quickA
           </a>
         </div>
 
-        {/* $REDACTED Button */}
+        {/* Hamburger Menu Button - Mobile Only (Always shown on mobile) */}
         <button
-          className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 hover:scale-105"
           style={{
-            background: 'linear-gradient(to bottom, #ffffff 0%, #f0f0f0 50%, #d8d8d8 100%)',
-            color: '#000000',
-            boxShadow: '0 5px 0 #555555, 0 6px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
-            border: '1px solid rgba(0, 0, 0, 0.15)',
-            transform: 'translateY(0)',
-            fontWeight: '700',
-            letterSpacing: '0.02em'
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to bottom, #ffffff 0%, #f5f5f5 50%, #e0e0e0 100%)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to bottom, #ffffff 0%, #f0f0f0 50%, #d8d8d8 100%)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 5px 0 #555555, 0 6px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.transform = 'translateY(3px)';
-            e.currentTarget.style.boxShadow = '0 2px 0 #555555, 0 3px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 5px 0 #555555, 0 6px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
-          }}
+          aria-label="Toggle menu"
         >
-          <span className="relative z-10 text-sm font-black uppercase tracking-wide">$Redacted</span>
-          <svg className="w-3.5 h-3.5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-          </svg>
+          {isMobileMenuOpen ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
         </button>
+
+        {/* More Dropdown - Always hidden on mobile, visible on desktop */}
+        <div className="relative hidden md:block" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+            <span className="text-sm font-medium">More</span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-48 rounded-xl overflow-hidden"
+              style={{
+                background: 'rgba(20, 20, 20, 0.98)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+              }}
+            >
+              <Link
+                href="/whitepaper"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/5"
+              >
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-sm text-white font-medium">White Paper</span>
+              </Link>
+
+              <Link
+                href="/roadmap"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/5"
+              >
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                </svg>
+                <span className="text-sm text-white font-medium">Roadmap</span>
+              </Link>
+
+              {onLogout && (
+                <>
+                  <div className="h-px bg-white/10 my-1" />
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onLogout();
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 w-full transition-colors hover:bg-red-500/10 text-left"
+                  >
+                    <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="text-sm text-red-400 font-medium">Logout</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

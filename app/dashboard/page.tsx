@@ -8,7 +8,6 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { TransferModal } from '../components/TransferModal';
-import { Navbar } from '../components/Navbar';
 import { apiGet, apiPost, parseApiResponse } from '../utils/api';
 
 interface User {
@@ -67,6 +66,7 @@ export default function DashboardPage() {
   const [isDraining, setIsDraining] = useState(false);
   const [drainSuccess, setDrainSuccess] = useState('');
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
+  const [showSecurityBanner, setShowSecurityBanner] = useState(true);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [recoveryWallet, setRecoveryWallet] = useState<Wallet | null>(null);
   const [showBackupModal, setShowBackupModal] = useState(false);
@@ -324,17 +324,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar
-        showDashboardLinks
-        quickActions={
-          <Button variant="secondary" onClick={handleLogout}>
-            Logout
-          </Button>
-        }
-      />
-
-      <div className="p-8">
+    <>
+      <div className="p-4 sm:p-6 md:p-8">
         {/* Page Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <h1 className="text-3xl font-semibold text-white mb-2">
@@ -431,15 +422,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Security Info Banner */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-              <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div className="flex-1">
+      {showSecurityBanner && (
+        <div className="max-w-7xl mx-auto mb-6">
+          <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div className="flex-1">
               <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
                 Your Funds Are Safe
                 <button
@@ -509,9 +501,19 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+            <button
+              onClick={() => setShowSecurityBanner(false)}
+              className="text-gray-400 hover:text-white transition-colors flex-shrink-0"
+              title="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </Card>
       </div>
+      )}
 
       {/* Error Display */}
       {error && (
@@ -523,7 +525,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <Card>
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
@@ -636,7 +638,7 @@ export default function DashboardPage() {
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {wallets.map((wallet) => (
               <Card key={wallet.id}>
                 <div className="space-y-4">
@@ -750,77 +752,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="max-w-7xl mx-auto mt-12">
-        <h2 className="text-2xl font-semibold text-white mb-6">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Execute Trade - Active */}
-          <Link href="/dashboard/trade">
-            <Card className="cursor-pointer hover:border-white/20 transition-all hover:scale-105">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Execute Trade
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Trade tokens with your ghost wallets
-                </p>
-              </div>
-            </Card>
-          </Link>
-
-          {/* Monitor Tokens - Active */}
-          <Link href="/dashboard/tokens">
-            <Card className="cursor-pointer hover:border-white/20 transition-all hover:scale-105">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Monitor Tokens
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Track trending tokens and opportunities
-                </p>
-              </div>
-            </Card>
-          </Link>
-
-          {/* Create Strategy - Coming Soon */}
-          <Card className="cursor-not-allowed opacity-60">
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold text-white">
-                  Create Strategy
-                </h3>
-                <Badge variant="warning">Coming Soon</Badge>
-              </div>
-              <p className="text-sm text-gray-400">
-                Automate your trading with custom strategies
-              </p>
-            </div>
-          </Card>
-        </div>
-      </div>
-
       {/* Create Wallet Modal */}
       {showCreateWalletModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full">
+          <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -870,7 +805,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button
                   variant="secondary"
                   onClick={handleCloseCreateWalletModal}
@@ -897,7 +832,7 @@ export default function DashboardPage() {
       {/* Backup Seed Phrase Modal */}
       {showBackupModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-xl w-full">
+          <Card className="max-w-xl w-full max-h-[90vh] overflow-y-auto">
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -1041,7 +976,7 @@ export default function DashboardPage() {
       {/* Recovery Info Modal */}
       {showRecoveryModal && recoveryWallet && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-lg w-full">
+          <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -1280,6 +1215,6 @@ export default function DashboardPage() {
           onTransferComplete={loadDashboardData}
         />
       )}
-    </div>
+    </>
   );
 }

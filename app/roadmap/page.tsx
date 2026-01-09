@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { Navbar } from '../components/Navbar';
 
 // Phase data structure
 const roadmapPhases = [
@@ -96,7 +95,7 @@ const FeatureItem = ({ name, completed }: { name: string; completed: boolean }) 
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     )}
-    <span style={{ color: completed ? '#d1d5db' : '#9ca3af' }}>{name}</span>
+    <span className={completed ? 'text-gray-custom-400' : 'text-gray-custom-500'}>{name}</span>
   </li>
 );
 
@@ -170,7 +169,7 @@ const PhaseCard = ({ phase, index }: { phase: typeof roadmapPhases[0]; index: nu
              phase.status === 'in_progress' ? '◐ In Progress' :
              'Upcoming'}
           </span>
-          <span className="text-sm font-medium" style={{ color: '#9ca3af' }}>{phase.timeline}</span>
+          <span className="text-sm font-medium text-gray-custom-500">{phase.timeline}</span>
         </div>
 
         {/* Title */}
@@ -179,7 +178,7 @@ const PhaseCard = ({ phase, index }: { phase: typeof roadmapPhases[0]; index: nu
         </h3>
 
         {/* Description */}
-        <p className="text-base md:text-lg mb-6" style={{ color: '#9ca3af' }}>
+        <p className="text-base md:text-lg mb-6 text-gray-custom-500">
           {phase.description}
         </p>
 
@@ -234,8 +233,6 @@ export default function Roadmap() {
         }
       `}</style>
 
-      <Navbar />
-
       {/* Hero Section */}
       <div className="px-6 py-20 max-w-7xl mx-auto text-center">
         <h1
@@ -249,43 +246,9 @@ export default function Roadmap() {
         >
           Roadmap
         </h1>
-        <p className="text-xl md:text-2xl mb-8" style={{ color: '#9ca3af' }}>
+        <p className="text-xl md:text-2xl mb-8 text-gray-custom-500">
           The future of privacy-first trading
         </p>
-
-        {/* Hero $Redacted Button */}
-        <button
-          className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
-          style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
-            color: '#000000',
-            boxShadow: '0 6px 0 #888888, 0 8px 16px rgba(0, 0, 0, 0.3)',
-            fontWeight: '600'
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.transform = 'translateY(3px)';
-            e.currentTarget.style.boxShadow = '0 3px 0 #888888, 0 5px 10px rgba(0, 0, 0, 0.25)';
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 6px 0 #888888, 0 8px 16px rgba(0, 0, 0, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 6px 0 #888888, 0 8px 16px rgba(0, 0, 0, 0.3)';
-          }}
-        >
-          <span className="relative z-10 text-lg font-bold">$Redacted</span>
-          <svg className="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-          </svg>
-          <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
-            }}
-          />
-        </button>
       </div>
 
       {/* Timeline Section */}
@@ -323,7 +286,7 @@ export default function Roadmap() {
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
           Start Trading Privately
         </h2>
-        <p className="text-lg mb-8" style={{ color: '#9ca3af' }}>
+        <p className="text-lg mb-8 text-gray-custom-500">
           Join us in building the future of anonymous trading
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

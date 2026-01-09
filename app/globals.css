@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --color-gray-custom-400: #d1d5db;
+  --color-gray-custom-500: #9ca3af;
+  --color-gray-custom-600: #888888;
+}
+
 @layer base {
 
   /* redacted Design System - CSS Variables */
@@ -38,8 +44,9 @@
     --info: rgba(59, 130, 246, 0.6);
 
     /* Typography */
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Display', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --font-heading: var(--font-oswald), 'Oswald', sans-serif;
+    --font-body: var(--font-jetbrains), 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --font-mono: var(--font-jetbrains), 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 
     /* Font Sizes */
     --font-size-xs: 0.75rem;
@@ -103,12 +110,47 @@
     background-position: center;
     background-attachment: fixed;
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
     font-size: var(--font-size-base);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+  }
+
+  /* Header Typography - Stealth/Classified Style */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: var(--font-size-4xl);
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    font-size: var(--font-size-3xl);
+    letter-spacing: -0.025em;
+  }
+
+  h3 {
+    font-size: var(--font-size-2xl);
+  }
+
+  h4 {
+    font-size: var(--font-size-xl);
+  }
+
+  h5 {
+    font-size: var(--font-size-lg);
+  }
+
+  h6 {
+    font-size: var(--font-size-base);
   }
 
   /* Selection styling */
@@ -249,5 +291,17 @@
         rgba(255, 255, 255, 0.05) 50%,
         rgba(255, 255, 255, 0) 100%);
     background-size: 1000px 100%;
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

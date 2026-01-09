@@ -117,14 +117,19 @@ export class SolanaService {
   > {
     const connection = this.getConnection();
 
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      walletPublicKey,
-      {
-        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
-      }
-    );
+    // Fetch from both Token Program and Token-2022 Program
+    const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+    const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
-    return tokenAccounts.value.map((account) => {
+    const [standardTokens, token2022Accounts] = await Promise.all([
+      connection.getParsedTokenAccountsByOwner(walletPublicKey, { programId: TOKEN_PROGRAM_ID }),
+      connection.getParsedTokenAccountsByOwner(walletPublicKey, { programId: TOKEN_2022_PROGRAM_ID })
+    ]);
+
+    // Combine both results
+    const allAccounts = [...standardTokens.value, ...token2022Accounts.value];
+
+    return allAccounts.map((account) => {
       const parsedInfo = account.account.data.parsed.info;
       return {
         mint: parsedInfo.mint,

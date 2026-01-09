@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
-import { Navbar } from '../../components/Navbar';
 import { apiGet } from '../../utils/api';
 import { getTokenImageUrl } from '../../utils/pumpfun';
 
@@ -47,9 +46,19 @@ export default function PortfolioPage() {
   const [sellPassword, setSellPassword] = useState('');
   const [sellError, setSellError] = useState('');
   const [isSelling, setIsSelling] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   useEffect(() => {
     loadPortfolios();
+  }, []);
+
+  useEffect(() => {
+    const checkViewMode = () => {
+      setViewMode(window.innerWidth < 768 ? 'cards' : 'table');
+    };
+    checkViewMode();
+    window.addEventListener('resize', checkViewMode);
+    return () => window.removeEventListener('resize', checkViewMode);
   }, []);
 
   const loadPortfolios = async () => {
@@ -185,10 +194,8 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar showDashboardLinks />
-
-      <div className="p-8">
+    <>
+      <div className="p-4 sm:p-6 md:p-8">
         {/* Page Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <h1 className="text-3xl font-semibold text-white mb-2">
@@ -323,9 +330,10 @@ export default function PortfolioPage() {
                   </div>
                 </div>
 
-                <Card>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                {viewMode === 'table' ? (
+                  <Card>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-800">
                           <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Token</th>
@@ -412,6 +420,82 @@ export default function PortfolioPage() {
                     </table>
                   </div>
                 </Card>
+              ) : (
+                <div className="space-y-4">
+                  {portfolio.holdings.map((holding) => (
+                    <Card key={holding.mint} className="p-4 sm:p-6">
+                      {/* Token header with image + name + sell button */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getTokenImageUrl(holding.imageUri, holding.symbol || undefined)}
+                            alt={holding.symbol || 'Token'}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = getTokenImageUrl(null, holding.symbol || undefined);
+                            }}
+                          />
+                          <div>
+                            <p className="text-white font-semibold text-lg">{holding.symbol || 'Unknown'}</p>
+                            <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                              {holding.name || holding.mint.substring(0, 8) + '...'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleSellToken(holding, portfolio.walletId)}
+                          className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:scale-105"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1))',
+                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            color: '#ef4444',
+                          }}
+                        >
+                          Sell
+                        </button>
+                      </div>
+
+                      {/* Stats grid - 2 columns */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Balance</p>
+                          <p className="text-sm font-semibold text-white">
+                            {holding.uiAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Price</p>
+                          <p className="text-sm font-semibold text-white">{formatPrice(holding.currentPrice)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Value</p>
+                          <p className="text-sm font-semibold text-white">{formatValue(holding.currentValueUsd)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Avg Entry</p>
+                          <p className="text-sm text-gray-400">{formatPrice(holding.averageEntryPrice)}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-400 mb-1">P&L</p>
+                          {holding.pnlUsd !== null && holding.pnlPercentage !== null ? (
+                            <div className="flex items-center gap-3">
+                              <p className={`text-base font-bold ${holding.pnlUsd >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {holding.pnlUsd >= 0 ? '+' : ''}{formatValue(holding.pnlUsd)}
+                              </p>
+                              <p className={`text-sm ${holding.pnlPercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ({holding.pnlPercentage >= 0 ? '+' : ''}{holding.pnlPercentage.toFixed(2)}%)
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-sm">N/A</p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
               </div>
             ))}
           </div>
@@ -421,7 +505,7 @@ export default function PortfolioPage() {
       {/* Password Modal */}
       {showPasswordModal && selectedHolding && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full">
+          <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -524,6 +608,6 @@ export default function PortfolioPage() {
           </Card>
         </div>
       )}
-    </div>
+    </>
   );
 }

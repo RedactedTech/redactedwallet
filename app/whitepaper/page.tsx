@@ -2,13 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Navbar } from '../components/Navbar';
 
 export default function WhitePaper() {
   return (
     <div className="min-h-screen">
-      <Navbar />
-
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-16 md:py-24">
         {/* Title Section with $Redacted Button */}
@@ -25,48 +22,9 @@ export default function WhitePaper() {
           >
             White Paper
           </h1>
-          <p className="text-xl mb-8" style={{ color: '#9ca3af' }}>
+          <p className="text-xl mb-8 text-gray-custom-500">
             Understanding Privacy-First Trading
           </p>
-
-          {/* 3D $Redacted Button */}
-          <div className="inline-block mt-4">
-            <button
-              className="group relative px-8 py-4 text-xl font-bold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
-                color: '#000000',
-                boxShadow: '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)',
-                transform: 'translateY(0)',
-                letterSpacing: '0.02em'
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = 'translateY(4px)';
-                e.currentTarget.style.boxShadow = '0 4px 0 #888888, 0 8px 15px rgba(0, 0, 0, 0.3)';
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 8px 0 #888888, 0 12px 20px rgba(0, 0, 0, 0.4)';
-              }}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <span>$Redacted</span>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%)'
-                }}
-              />
-            </button>
-          </div>
         </div>
 
         {/* Sections */}
@@ -84,7 +42,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">The Problem</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <p>
                 In today's crypto markets, every transaction you make is permanently recorded on the blockchain.
                 This creates a significant problem: <span className="font-semibold text-white">anyone can track your trading activity</span>.
@@ -93,7 +51,7 @@ export default function WhitePaper() {
                 Professional traders, bots, and copy-traders monitor successful wallets and replicate their strategies.
                 This means:
               </p>
-              <ul className="list-disc list-inside space-y-3 ml-6" style={{ color: '#9ca3af' }}>
+              <ul className="list-disc list-inside space-y-3 ml-6 text-gray-custom-500">
                 <li>Your profitable trades get front-run by MEV bots</li>
                 <li>Copy-traders drive up prices before you can enter positions</li>
                 <li>Your trading patterns become public knowledge</li>
@@ -119,7 +77,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">The Redacted Solution</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <p>
                 Redacted makes you <span className="font-semibold text-white">mathematically invisible</span> on the blockchain.
                 Here's how it works, explained simply:
@@ -215,7 +173,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">How It Works (Technical Overview)</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <p>
                 For those interested in the technical details, here's what happens under the hood:
               </p>
@@ -287,7 +245,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Complete Privacy</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   Your trading history cannot be linked together. Each transaction appears as an independent, unrelated event.
                 </p>
               </div>
@@ -301,7 +259,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">No Copy-Traders</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   Without a persistent wallet address to monitor, copy-traders and bots cannot follow your strategy.
                 </p>
               </div>
@@ -315,7 +273,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">MEV Protection</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   Jito bundles ensure your trades execute at the prices you expect, without front-running or sandwich attacks.
                 </p>
               </div>
@@ -329,7 +287,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Maintain Edge</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   Keep your trading strategies confidential and maintain your competitive advantage in the market.
                 </p>
               </div>
@@ -343,7 +301,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Zero Compromise</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   Full privacy without sacrificing speed, security, or control over your funds.
                 </p>
               </div>
@@ -357,7 +315,7 @@ export default function WhitePaper() {
                 }}
               >
                 <h3 className="text-lg font-semibold text-white mb-2">Simple to Use</h3>
-                <p style={{ color: '#9ca3af' }}>
+                <p className="text-gray-custom-500">
                   All the complexity is automated. Trade as easily as you would with a regular wallet.
                 </p>
               </div>
@@ -377,7 +335,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Who Benefits from Redacted?</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <ul className="space-y-4">
                 <li className="flex gap-4">
                   <span className="text-2xl">💎</span>
@@ -431,7 +389,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Security &amp; Trust</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <p>
                 Redacted is built with security as the foundation:
               </p>
@@ -469,7 +427,7 @@ export default function WhitePaper() {
             }}
           >
             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Conclusion</h2>
-            <div className="space-y-5 text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+            <div className="space-y-5 text-lg leading-relaxed text-gray-custom-400">
               <p>
                 The blockchain's transparency is both its greatest strength and, for traders, its greatest weakness.
                 Redacted solves this paradox by providing <span className="font-semibold text-white">mathematical privacy</span> without
@@ -496,7 +454,7 @@ export default function WhitePaper() {
               }}
             >
               <h2 className="text-4xl font-bold text-white mb-6 tracking-tight">Ready to Trade Invisibly?</h2>
-              <p className="text-lg mb-8" style={{ color: '#9ca3af' }}>
+              <p className="text-lg mb-8 text-gray-custom-500">
                 Join traders who value their privacy and competitive edge.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

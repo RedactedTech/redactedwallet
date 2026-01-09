@@ -123,6 +123,31 @@ router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * GET /api/wallets/portfolio/all
+ * Get portfolio overview with all holdings across wallets
+ */
+router.get('/portfolio/all', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    const portfolio = await WalletService.getPortfolio(userId);
+
+    const response: ApiResponse<typeof portfolio> = {
+      success: true,
+      data: portfolio
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('Error fetching portfolio:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/wallets/:id
  * Get specific wallet details
  */
