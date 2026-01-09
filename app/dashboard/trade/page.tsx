@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '../../components/Card';
@@ -28,10 +28,13 @@ interface TradeFormData {
   useJitoBundle: boolean;
 }
 
-export default function TradePage() {
+function TradePageContent() {
   const searchParams = useSearchParams();
   const [selectedToken, setSelectedToken] = useState<SelectedToken | null>(null);
   const [isLoadingToken, setIsLoadingToken] = useState(false);
+  const [isExecutingTrade, setIsExecutingTrade] = useState(false);
+  const [tradeError, setTradeError] = useState('');
+  const [tradeSuccess, setTradeSuccess] = useState('');
   const [formData, setFormData] = useState<TradeFormData>({
     token: null,
     amountSol: '',
@@ -90,8 +93,106 @@ export default function TradePage() {
   };
 
   const handleConfirmTrade = async () => {
-    // Trade execution will be implemented in next phase
-    console.log('Execute trade:', formData);
+    setIsExecutingTrade(true);
+    setTradeError('');
+    setTradeSuccess('');
+
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const sessionPassword = localStorage.getItem('sessionPassword');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+      if (!sessionPassword) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      if (!formData.token) {
+        throw new Error('No token selected');
+      }
+
+      if (!formData.selectedWalletId && formData.walletSelection === 'manual') {
+        throw new Error('Please select a wallet');
+      }
+
+      // Get wallet ID
+      let ghostWalletId = formData.selectedWalletId;
+
+      if (formData.walletSelection === 'auto') {
+        // Request a trading wallet from the backend
+        const walletResponse = await fetch(`${apiUrl}/api/wallets/trading-wallet`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ strategyId: null })
+        });
+
+        const walletData = await walletResponse.json();
+
+        if (!walletResponse.ok) {
+          throw new Error(walletData.error || 'Failed to get trading wallet');
+        }
+
+        ghostWalletId = walletData.wallet.id;
+      }
+
+      // Prepare trade payload
+      const payload = {
+        ghostWalletId,
+        tokenAddress: formData.token.mint,
+        entryAmountSol: parseFloat(formData.amountSol),
+        maxSlippageBps: parseInt(formData.maxSlippageBps),
+        takeProfitPct: formData.takeProfitPct ? parseFloat(formData.takeProfitPct) : undefined,
+        stopLossPct: formData.stopLossPct ? parseFloat(formData.stopLossPct) : undefined,
+        trailingStopPct: formData.trailingStopPct ? parseFloat(formData.trailingStopPct) : undefined,
+        useJitoBundle: formData.useJitoBundle,
+        sessionPassword
+      };
+
+      console.log('Executing trade with payload:', payload);
+
+      const response = await fetch(`${apiUrl}/api/trades/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to execute trade');
+      }
+
+      // Success!
+      setTradeSuccess(`Trade executed successfully! Signature: ${data.data.entry_signature?.substring(0, 8)}...`);
+
+      // Reset form after 3 seconds and go back to form view
+      setTimeout(() => {
+        setShowPreview(false);
+        setSelectedToken(null);
+        setFormData({
+          token: null,
+          amountSol: '',
+          walletSelection: 'auto',
+          takeProfitPct: '50',
+          stopLossPct: '10',
+          trailingStopPct: '5',
+          maxSlippageBps: '500',
+          useJitoBundle: true
+        });
+        setTradeSuccess('');
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Trade execution error:', error);
+      setTradeError(error.message || 'Failed to execute trade');
+    } finally {
+      setIsExecutingTrade(false);
+    }
   };
 
   return (
@@ -154,13 +255,44 @@ export default function TradePage() {
             </div>
           </Card>
         ) : (
-          <TransactionPreview
-            formData={formData}
-            onCancel={handleCancelPreview}
-            onConfirm={handleConfirmTrade}
-          />
+          <>
+            {/* Error/Success Messages */}
+            {tradeError && (
+              <div className="mb-6">
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-sm">{tradeError}</p>
+                </div>
+              </div>
+            )}
+            {tradeSuccess && (
+              <div className="mb-6">
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-green-500 text-sm">{tradeSuccess}</p>
+                </div>
+              </div>
+            )}
+
+            <TransactionPreview
+              formData={formData}
+              onCancel={handleCancelPreview}
+              onConfirm={handleConfirmTrade}
+              isExecuting={isExecutingTrade}
+            />
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function TradePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+      </div>
+    }>
+      <TradePageContent />
+    </Suspense>
   );
 }
