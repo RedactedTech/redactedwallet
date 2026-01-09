@@ -51,6 +51,19 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const [error, setError] = useState('');
+  const [showDrainModal, setShowDrainModal] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [drainDestination, setDrainDestination] = useState('');
+  const [drainPassword, setDrainPassword] = useState('');
+  const [isDraining, setIsDraining] = useState(false);
+  const [drainSuccess, setDrainSuccess] = useState('');
+  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [recoveryWallet, setRecoveryWallet] = useState<Wallet | null>(null);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupPassword, setBackupPassword] = useState('');
+  const [isLoadingBackup, setIsLoadingBackup] = useState(false);
+  const [seedPhrase, setSeedPhrase] = useState('');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -170,6 +183,107 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleOpenDrainModal = (wallet: Wallet) => {
+    setSelectedWallet(wallet);
+    setShowDrainModal(true);
+    setDrainDestination('');
+    setDrainPassword('');
+    setError('');
+    setDrainSuccess('');
+  };
+
+  const handleCloseDrainModal = () => {
+    setShowDrainModal(false);
+    setSelectedWallet(null);
+    setDrainDestination('');
+    setDrainPassword('');
+    setError('');
+    setDrainSuccess('');
+  };
+
+  const handleDrainWallet = async () => {
+    if (!selectedWallet) return;
+
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+
+    setIsDraining(true);
+    setError('');
+    setDrainSuccess('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/wallets/${selectedWallet.id}/drain`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          destinationAddress: drainDestination,
+          password: drainPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to drain wallet');
+      }
+
+      setDrainSuccess(data.message || 'Wallet drained successfully!');
+
+      // Reload dashboard data after a short delay
+      setTimeout(async () => {
+        await loadDashboardData();
+        handleCloseDrainModal();
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to drain wallet');
+    } finally {
+      setIsDraining(false);
+    }
+  };
+
+  const handleOpenBackupModal = () => {
+    setShowBackupModal(true);
+    setBackupPassword('');
+    setSeedPhrase('');
+    setError('');
+  };
+
+  const handleBackupSeed = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+
+    setIsLoadingBackup(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/backup-seed`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          password: backupPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to retrieve seed phrase');
+      }
+
+      setSeedPhrase(data.data.seedPhrase);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to retrieve seed phrase');
+    } finally {
+      setIsLoadingBackup(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -244,6 +358,21 @@ export default function DashboardPage() {
             <span className="text-xs font-medium">White Paper</span>
           </Link>
 
+          <Link
+            href="/roadmap"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+            </svg>
+            <span className="text-xs font-medium">Roadmap</span>
+          </Link>
+
           <button
             className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
             style={{
@@ -278,6 +407,89 @@ export default function DashboardPage() {
             />
           </button>
         </div>
+      </div>
+
+      {/* Security Info Banner */}
+      <div className="max-w-7xl mx-auto mb-6">
+        <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+                Your Funds Are Safe
+                <button
+                  onClick={() => setShowSecurityInfo(!showSecurityInfo)}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline"
+                >
+                  {showSecurityInfo ? 'Hide Details' : 'Learn More'}
+                </button>
+              </h3>
+              <p className="text-sm text-gray-300 mb-3">
+                All ghost wallets are derived from your encrypted master seed using BIP39/44 standard.
+                You can always recover your funds with your password.
+              </p>
+
+              {showSecurityInfo && (
+                <div className="space-y-3 pt-3 border-t border-white/10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="text-xs font-medium text-white">Deterministic Derivation</p>
+                        <p className="text-xs text-gray-400">Each wallet uses path m/44'/501'/0'/0'/N</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="text-xs font-medium text-white">AES-256 Encryption</p>
+                        <p className="text-xs text-gray-400">Master seed encrypted with your password</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="text-xs font-medium text-white">No Private Keys Stored</p>
+                        <p className="text-xs text-gray-400">Keys derived on-demand from master seed</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="text-xs font-medium text-white">Full Recovery Available</p>
+                        <p className="text-xs text-gray-400">Drain funds anytime with your password</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-3">
+                    <Button
+                      variant="secondary"
+                      onClick={handleOpenBackupModal}
+                      className="w-full sm:w-auto"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Backup Seed Phrase
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Error Display */}
@@ -459,10 +671,31 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-800">
+                  <div className="pt-4 border-t border-gray-800 space-y-2">
                     <p className="text-xs text-gray-500">
                       Created {new Date(wallet.created_at).toLocaleDateString()}
                     </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setRecoveryWallet(wallet);
+                          setShowRecoveryModal(true);
+                        }}
+                        className="px-3 py-2 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-white border border-gray-700 hover:border-gray-600 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Recovery
+                      </button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleOpenDrainModal(wallet)}
+                        className="text-xs py-2"
+                      >
+                        Drain
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -477,25 +710,24 @@ export default function DashboardPage() {
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Execute Trade - Coming Soon */}
-          <Card className="cursor-not-allowed opacity-60">
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold text-white">
+          {/* Execute Trade - Active */}
+          <Link href="/dashboard/trade">
+            <Card className="cursor-pointer hover:border-white/20 transition-all hover:scale-105">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">
                   Execute Trade
                 </h3>
-                <Badge variant="warning">Coming Soon</Badge>
+                <p className="text-sm text-gray-400">
+                  Trade tokens with your ghost wallets
+                </p>
               </div>
-              <p className="text-sm text-gray-400">
-                Trade tokens with your ghost wallets
-              </p>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
           {/* Monitor Tokens - Active */}
           <Link href="/dashboard/tokens">
@@ -538,6 +770,348 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Backup Seed Phrase Modal */}
+      {showBackupModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-xl w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Backup Master Seed Phrase
+                </h3>
+                <button
+                  onClick={() => setShowBackupModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-400 mb-2">Critical Security Warning</p>
+                    <ul className="space-y-1 text-xs text-gray-300">
+                      <li>• This seed phrase controls ALL your ghost wallets</li>
+                      <li>• Anyone with this phrase can steal ALL your funds</li>
+                      <li>• Never share it with anyone, including Redacted support</li>
+                      <li>• Store it offline in a secure location</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {!seedPhrase ? (
+                <>
+                  <p className="text-sm text-gray-300">
+                    Your master seed phrase is a 24-word mnemonic that can be used to recover all your ghost wallets.
+                    Write it down and store it in a safe place.
+                  </p>
+
+                  {error && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <p className="text-red-500 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Enter Your Password
+                    </label>
+                    <input
+                      type="password"
+                      value={backupPassword}
+                      onChange={(e) => setBackupPassword(e.target.value)}
+                      placeholder="Enter your account password"
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                      disabled={isLoadingBackup}
+                      onKeyPress={(e) => e.key === 'Enter' && handleBackupSeed()}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowBackupModal(false)}
+                      className="flex-1"
+                      disabled={isLoadingBackup}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={handleBackupSeed}
+                      className="flex-1"
+                      isLoading={isLoadingBackup}
+                      disabled={!backupPassword}
+                    >
+                      Reveal Seed Phrase
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-4 rounded-lg bg-white/5 border border-gray-700">
+                    <p className="text-xs text-gray-400 mb-3 font-semibold">
+                      24-Word Seed Phrase (BIP39)
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {seedPhrase.split(' ').map((word, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 rounded bg-black/30">
+                          <span className="text-xs text-gray-500 font-mono w-6">{index + 1}.</span>
+                          <span className="text-sm text-white font-mono">{word}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(seedPhrase)}
+                      className="w-full px-3 py-2 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-white border border-gray-700 hover:border-gray-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy to Clipboard
+                    </button>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <p className="text-xs text-yellow-200">
+                      <strong>Action Required:</strong> Write down these words in order and store them securely offline.
+                      This is the ONLY way to recover your wallets if you lose access.
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowBackupModal(false)}
+                    className="w-full"
+                  >
+                    I&apos;ve Saved My Seed Phrase
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Recovery Info Modal */}
+      {showRecoveryModal && recoveryWallet && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-lg w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  Wallet Recovery Info
+                </h3>
+                <button
+                  onClick={() => setShowRecoveryModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <p className="text-sm text-green-400 font-medium mb-2">
+                  Your funds in this wallet are fully recoverable
+                </p>
+                <p className="text-xs text-gray-300">
+                  This wallet is deterministically derived from your master seed. As long as you have your password, you can always access these funds.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Wallet Index</p>
+                  <p className="text-sm text-white font-mono bg-white/5 px-3 py-2 rounded border border-gray-700">
+                    #{recoveryWallet.wallet_index}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Derivation Path (BIP44)</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-white font-mono bg-white/5 px-3 py-2 rounded border border-gray-700 flex-1">
+                      {recoveryWallet.derivation_path}
+                    </p>
+                    <button
+                      onClick={() => copyToClipboard(recoveryWallet.derivation_path)}
+                      className="text-gray-400 hover:text-white transition-colors p-2"
+                      title="Copy derivation path"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Public Key</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-white font-mono bg-white/5 px-3 py-2 rounded border border-gray-700 flex-1 truncate">
+                      {recoveryWallet.public_key}
+                    </p>
+                    <button
+                      onClick={() => copyToClipboard(recoveryWallet.public_key)}
+                      className="text-gray-400 hover:text-white transition-colors p-2"
+                      title="Copy public key"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <h4 className="text-sm font-semibold text-blue-400 mb-2">How Recovery Works</h4>
+                <ol className="space-y-2 text-xs text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold">1.</span>
+                    <span>Your master seed is encrypted with your password using AES-256</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold">2.</span>
+                    <span>Each wallet is derived from this seed using the derivation path shown above</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold">3.</span>
+                    <span>To recover funds, click &quot;Drain Wallet&quot; and enter your password</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold">4.</span>
+                    <span>All SOL and SPL tokens will be transferred to your chosen address</span>
+                  </li>
+                </ol>
+              </div>
+
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <svg className="w-5 h-5 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-xs text-yellow-200">
+                  <strong>Important:</strong> Never share your password or master seed with anyone. Redacted support will never ask for these.
+                </p>
+              </div>
+
+              <Button
+                variant="primary"
+                onClick={() => setShowRecoveryModal(false)}
+                className="w-full"
+              >
+                Got It
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Drain Wallet Modal */}
+      {showDrainModal && selectedWallet && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white">
+                  Drain Wallet #{selectedWallet.wallet_index}
+                </h3>
+                <button
+                  onClick={handleCloseDrainModal}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-400">
+                Transfer all SOL and SPL tokens from this wallet to another address. This will mark the wallet as recycled.
+              </p>
+
+              {drainSuccess && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-green-500 text-sm">{drainSuccess}</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Destination Address
+                </label>
+                <input
+                  type="text"
+                  value={drainDestination}
+                  onChange={(e) => setDrainDestination(e.target.value)}
+                  placeholder="Enter Solana wallet address"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                  disabled={isDraining || !!drainSuccess}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Your Password
+                </label>
+                <input
+                  type="password"
+                  value={drainPassword}
+                  onChange={(e) => setDrainPassword(e.target.value)}
+                  placeholder="Enter your account password"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                  disabled={isDraining || !!drainSuccess}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Required to derive the wallet&apos;s private key
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="secondary"
+                  onClick={handleCloseDrainModal}
+                  className="flex-1"
+                  disabled={isDraining}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleDrainWallet}
+                  className="flex-1"
+                  isLoading={isDraining}
+                  disabled={!drainDestination || !drainPassword || !!drainSuccess}
+                >
+                  {drainSuccess ? 'Done!' : 'Drain Wallet'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

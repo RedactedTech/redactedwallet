@@ -181,4 +181,50 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * POST /api/auth/backup-seed
+ * Get master seed phrase for backup (requires password verification)
+ */
+router.post('/backup-seed', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required'
+      });
+    }
+
+    const seedPhrase = await AuthService.getMasterSeedPhrase(req.user.userId, password);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        seedPhrase
+      },
+      message: 'Master seed retrieved successfully'
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(error.message.includes('Invalid password') ? 401 : 500).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve seed phrase'
+      });
+    }
+  }
+});
+
 export default router;

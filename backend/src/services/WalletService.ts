@@ -1,4 +1,17 @@
-import { Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import {
+  Keypair,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  Transaction,
+  SystemProgram,
+  sendAndConfirmTransaction
+} from '@solana/web3.js';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
+  getAccount
+} from '@solana/spl-token';
 import { derivePath } from 'ed25519-hd-key';
 import * as bip39 from 'bip39';
 import { pool } from '../config/database';
@@ -6,6 +19,7 @@ import { GhostWallet, SpawnWalletInput } from '../types';
 import { EncryptionService } from './EncryptionService';
 import { getSolanaConnection } from '../config/solana';
 import { NotFoundError, ValidationError } from '../types';
+import { SolanaService } from './SolanaService';
 
 // ============================================================
 // WALLET SERVICE
@@ -363,6 +377,168 @@ export class WalletService {
 
     // No suitable wallet found, create new one
     return await this.createGhostWallet({ userId, strategyId });
+  }
+
+  // ============================================================
+  // WALLET DRAINING
+  // ============================================================
+
+  /**
+   * Drain all funds from a ghost wallet to a destination address
+   * Transfers SOL and all SPL tokens, then marks wallet as recycled
+   */
+  static async drainWallet(
+    walletId: string,
+    userId: string,
+    destinationAddress: string,
+    userPassword: string
+  ): Promise<{
+    solSignature?: string;
+    tokenSignatures: Array<{ mint: string; signature: string }>;
+    solAmount: number;
+    tokenAmounts: Array<{ mint: string; amount: number }>;
+  }> {
+    // Verify wallet belongs to user
+    const wallet = await this.getWalletById(walletId, userId);
+
+    if (wallet.status === 'recycled') {
+      throw new ValidationError('Wallet is already recycled');
+    }
+
+    // Derive keypair from master seed
+    const walletKeypair = await this.deriveUserKeypair(
+      userId,
+      wallet.wallet_index,
+      userPassword
+    );
+
+    const connection = getSolanaConnection();
+    const destinationPubkey = new PublicKey(destinationAddress);
+    const walletPubkey = walletKeypair.publicKey;
+
+    const result = {
+      solSignature: undefined as string | undefined,
+      tokenSignatures: [] as Array<{ mint: string; signature: string }>,
+      solAmount: 0,
+      tokenAmounts: [] as Array<{ mint: string; amount: number }>,
+    };
+
+    try {
+      // 1. Transfer all SPL tokens first
+      const tokenAccounts = await SolanaService.getTokenAccounts(walletPubkey);
+
+      for (const tokenAccount of tokenAccounts) {
+        if (tokenAccount.balance > 0) {
+          try {
+            // Get source and destination token accounts
+            const tokenMint = new PublicKey(tokenAccount.mint);
+            const sourceTokenAccount = await getAssociatedTokenAddress(
+              tokenMint,
+              walletPubkey
+            );
+            const destTokenAccount = await getAssociatedTokenAddress(
+              tokenMint,
+              destinationPubkey
+            );
+
+            // Build transfer instruction
+            const transferInstruction = createTransferInstruction(
+              sourceTokenAccount,
+              destTokenAccount,
+              walletPubkey,
+              tokenAccount.balance,
+              [],
+              TOKEN_PROGRAM_ID
+            );
+
+            // Create transaction
+            const transaction = new Transaction();
+            const { blockhash } = await SolanaService.getRecentBlockhash();
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = walletPubkey;
+            transaction.add(transferInstruction);
+
+            // Sign and send
+            transaction.sign(walletKeypair);
+            const signature = await SolanaService.sendAndConfirmTransaction(transaction, {
+              commitment: 'confirmed',
+            });
+
+            result.tokenSignatures.push({
+              mint: tokenAccount.mint,
+              signature: signature.signature,
+            });
+            result.tokenAmounts.push({
+              mint: tokenAccount.mint,
+              amount: tokenAccount.uiAmount,
+            });
+
+            console.log(`✅ Transferred ${tokenAccount.uiAmount} tokens (${tokenAccount.mint})`);
+          } catch (error: any) {
+            console.error(`❌ Failed to transfer token ${tokenAccount.mint}:`, error.message);
+            // Continue with other tokens even if one fails
+          }
+        }
+      }
+
+      // 2. Transfer SOL (leave enough for rent exemption and transaction fee)
+      const balance = await connection.getBalance(walletPubkey);
+      const minRentExemption = await SolanaService.getMinimumBalanceForRentExemption(0);
+      const txFee = 5000; // 0.000005 SOL fee estimate
+      const amountToTransfer = balance - minRentExemption - txFee;
+
+      if (amountToTransfer > 0) {
+        const transaction = new Transaction();
+        const { blockhash } = await SolanaService.getRecentBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = walletPubkey;
+
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: walletPubkey,
+            toPubkey: destinationPubkey,
+            lamports: amountToTransfer,
+          })
+        );
+
+        transaction.sign(walletKeypair);
+        const signature = await SolanaService.sendAndConfirmTransaction(transaction, {
+          commitment: 'confirmed',
+        });
+
+        result.solSignature = signature.signature;
+        result.solAmount = amountToTransfer / LAMPORTS_PER_SOL;
+
+        console.log(`✅ Transferred ${result.solAmount} SOL`);
+      } else {
+        console.log(`⚠️ Insufficient balance to transfer SOL (balance: ${balance} lamports)`);
+      }
+
+      // 3. Mark wallet as recycled
+      await this.recycleWallet(walletId, userId);
+
+      // Log audit event
+      await pool.query(
+        `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          userId,
+          'ghost_wallet_drained',
+          'ghost_wallet',
+          walletId,
+          JSON.stringify({
+            destination: destinationAddress,
+            sol_amount: result.solAmount,
+            token_count: result.tokenSignatures.length,
+          }),
+        ]
+      );
+
+      return result;
+    } catch (error: any) {
+      console.error('Error draining wallet:', error);
+      throw new Error(`Failed to drain wallet: ${error.message}`);
+    }
   }
 }
 

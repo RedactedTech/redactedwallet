@@ -13,6 +13,7 @@ import {
   ValidationError
 } from '../types';
 import crypto from 'crypto';
+import * as bip39 from 'bip39';
 
 /**
  * AuthService
@@ -380,6 +381,48 @@ export class AuthService {
     }
 
     return this.sanitizeUser(result.rows[0]);
+  }
+
+  /**
+   * Gets master seed phrase for backup (requires password verification)
+   */
+  static async getMasterSeedPhrase(userId: string, password: string): Promise<string> {
+    // Fetch user with encrypted seed
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE id = $1 AND is_active = true',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new AuthenticationError('User not found');
+    }
+
+    const user = result.rows[0];
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+      throw new AuthenticationError('Invalid password');
+    }
+
+    // Decrypt master seed
+    const masterSeedHex = EncryptionService.decrypt(
+      user.master_seed_encrypted,
+      password,
+      user.encryption_salt
+    );
+
+    // Convert hex seed to BIP39 mnemonic for easier backup
+    const seedBuffer = Buffer.from(masterSeedHex, 'hex');
+    const mnemonic = bip39.entropyToMnemonic(seedBuffer);
+
+    // Log audit event
+    await this.logAuditEvent(userId, 'master_seed_viewed', 'user', userId, {
+      timestamp: new Date().toISOString()
+    });
+
+    return mnemonic;
   }
 
   /**

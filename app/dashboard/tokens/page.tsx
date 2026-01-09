@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Input } from '../../components/Input';
+import { getPumpFunMetadata, getTokenImageUrl } from '../../utils/pumpfun';
 
 interface MonitoredToken {
   id: string;
@@ -25,16 +26,70 @@ interface MonitoredToken {
   last_updated: string;
 }
 
+interface TokenMetadataCache {
+  [tokenAddress: string]: {
+    imageUrl: string;
+    name: string | null;
+  };
+}
+
 export default function TokensPage() {
   const [tokens, setTokens] = useState<MonitoredToken[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<MonitoredToken[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [metadataCache, setMetadataCache] = useState<TokenMetadataCache>({});
 
   useEffect(() => {
     fetchTrendingTokens();
   }, []);
+
+  // Fetch metadata for tokens
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      for (const token of tokens) {
+        // Skip if already cached
+        if (metadataCache[token.token_address]) continue;
+
+        // Only fetch metadata for pump_fun tokens
+        if (token.source === 'pump_fun') {
+          const metadata = await getPumpFunMetadata(token.token_address);
+          if (metadata) {
+            setMetadataCache(prev => ({
+              ...prev,
+              [token.token_address]: {
+                imageUrl: getTokenImageUrl(metadata.image_uri, token.token_symbol || undefined),
+                name: metadata.name || token.token_name
+              }
+            }));
+          } else {
+            // Use fallback
+            setMetadataCache(prev => ({
+              ...prev,
+              [token.token_address]: {
+                imageUrl: getTokenImageUrl(null, token.token_symbol || undefined),
+                name: token.token_name
+              }
+            }));
+          }
+        } else {
+          // For non-pump.fun tokens, use fallback
+          setMetadataCache(prev => ({
+            ...prev,
+            [token.token_address]: {
+              imageUrl: getTokenImageUrl(null, token.token_symbol || undefined),
+              name: token.token_name
+            }
+          }));
+        }
+      }
+    };
+
+    if (tokens.length > 0) {
+      fetchMetadata();
+    }
+  }, [tokens]);
 
   useEffect(() => {
     // Debounce search
@@ -206,35 +261,53 @@ export default function TokensPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTokens.map((token) => (
-                    <tr
-                      key={token.id}
-                      className="border-b border-gray-800 hover:bg-white/5 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <div>
-                          <p className="text-white font-semibold">
-                            {token.token_symbol || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate max-w-xs">
-                            {token.token_name || token.token_address.substring(0, 8) + '...'}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-white">
-                        {formatPrice(token.current_price_usd)}
-                      </td>
-                      <td className="py-4 px-4 text-white">
-                        {formatVolume(token.volume_24h_usd)}
-                      </td>
-                      <td className="py-4 px-4">
-                        {getRiskBadge(token.risk_score)}
-                      </td>
-                      <td className="py-4 px-4">
-                        {getSourceBadge(token.source)}
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredTokens.map((token) => {
+                    const metadata = metadataCache[token.token_address];
+                    const imageUrl = metadata?.imageUrl || getTokenImageUrl(null, token.token_symbol || undefined);
+                    const displayName = metadata?.name || token.token_name;
+
+                    return (
+                      <tr
+                        key={token.id}
+                        className="border-b border-gray-800 hover:bg-white/5 transition-colors"
+                      >
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={imageUrl}
+                              alt={token.token_symbol || 'Token'}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                // Fallback if image fails to load
+                                const img = e.target as HTMLImageElement;
+                                img.src = getTokenImageUrl(null, token.token_symbol || undefined);
+                              }}
+                            />
+                            <div>
+                              <p className="text-white font-semibold">
+                                {token.token_symbol || 'Unknown'}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate max-w-xs">
+                                {displayName || token.token_address.substring(0, 8) + '...'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-white">
+                          {formatPrice(token.current_price_usd)}
+                        </td>
+                        <td className="py-4 px-4 text-white">
+                          {formatVolume(token.volume_24h_usd)}
+                        </td>
+                        <td className="py-4 px-4">
+                          {getRiskBadge(token.risk_score)}
+                        </td>
+                        <td className="py-4 px-4">
+                          {getSourceBadge(token.source)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

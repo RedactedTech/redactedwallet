@@ -229,4 +229,51 @@ router.post('/trading-wallet', authenticate, async (req: AuthRequest, res: Respo
   }
 });
 
+/**
+ * POST /api/wallets/:id/drain
+ * Drain all funds from a ghost wallet to a destination address
+ */
+router.post('/:id/drain', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+    const { destinationAddress, password } = req.body;
+
+    if (!destinationAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Destination address is required'
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required'
+      });
+    }
+
+    const result = await WalletService.drainWallet(
+      id,
+      userId,
+      destinationAddress,
+      password
+    );
+
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      data: result,
+      message: `Wallet drained successfully. Transferred ${result.solAmount} SOL and ${result.tokenSignatures.length} token types.`
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('Error draining wallet:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;

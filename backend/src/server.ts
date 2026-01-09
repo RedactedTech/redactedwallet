@@ -7,6 +7,7 @@ import authRoutes from './api/routes/auth';
 import walletRoutes from './api/routes/wallets';
 import tradeRoutes from './api/routes/trades';
 import tokenRoutes from './api/routes/tokens';
+import pumpfunRoutes from './routes/pumpfun.routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 // Load environment variables
@@ -85,6 +86,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/wallets', walletRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/pumpfun', pumpfunRoutes);
 
 // TODO: Add more routes as we build features
 // app.use('/api/strategies', strategyRoutes);
