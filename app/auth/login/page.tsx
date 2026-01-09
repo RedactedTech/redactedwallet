@@ -38,6 +38,7 @@ export default function LoginPage() {
       // Store tokens
       localStorage.setItem('accessToken', data.data.accessToken);
       localStorage.setItem('refreshToken', data.data.refreshToken);
+      localStorage.setItem('sessionPassword', data.data.sessionPassword);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
       // Redirect to dashboard
