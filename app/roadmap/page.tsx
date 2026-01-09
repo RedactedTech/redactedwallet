@@ -197,7 +197,7 @@ export default function Roadmap() {
   const [redactedButtonPressed, setRedactedButtonPressed] = useState(false);
 
   return (
-    <div className="min-h-screen" style={{ background: '#000000' }}>
+    <div className="min-h-screen">
       <style jsx>{`
         @keyframes fadeInUp {
           from {

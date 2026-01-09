@@ -406,11 +406,14 @@ export class AuthService {
       throw new AuthenticationError('Invalid password');
     }
 
-    // Decrypt master seed
+    // Unpack and decrypt master seed
+    const unpackedSeed = EncryptionService.unpackEncrypted(user.master_seed_encrypted);
     const masterSeedHex = EncryptionService.decrypt(
-      user.master_seed_encrypted,
+      unpackedSeed.encrypted,
       password,
-      user.encryption_salt
+      unpackedSeed.salt,
+      unpackedSeed.iv,
+      unpackedSeed.authTag
     );
 
     // Convert hex seed to BIP39 mnemonic for easier backup

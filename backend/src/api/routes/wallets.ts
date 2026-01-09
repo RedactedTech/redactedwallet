@@ -16,13 +16,20 @@ const router = express.Router();
 router.post('/create', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { strategyId, fundAmount } = req.body;
+    const { strategyId, fundAmount, password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required to create wallet'
+      });
+    }
 
     const wallet = await WalletService.createGhostWallet({
       userId,
       strategyId,
       fundAmount
-    });
+    }, password);
 
     const response: ApiResponse<GhostWallet> = {
       success: true,
@@ -209,9 +216,16 @@ router.post('/auto-recycle', authenticate, async (req: AuthRequest, res: Respons
 router.post('/trading-wallet', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { strategyId } = req.body;
+    const { strategyId, password } = req.body;
 
-    const wallet = await WalletService.getOrCreateTradingWallet(userId, strategyId);
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required to get or create trading wallet'
+      });
+    }
+
+    const wallet = await WalletService.getOrCreateTradingWallet(userId, password, strategyId);
 
     const response: ApiResponse<GhostWallet> = {
       success: true,

@@ -70,11 +70,14 @@ export class WalletService {
 
     const { master_seed_encrypted, encryption_salt } = userResult.rows[0];
 
-    // Decrypt master seed
+    // Unpack and decrypt master seed
+    const unpackedSeed = EncryptionService.unpackEncrypted(master_seed_encrypted);
     const masterSeedHex = EncryptionService.decrypt(
-      master_seed_encrypted,
+      unpackedSeed.encrypted,
       userPassword,
-      encryption_salt
+      unpackedSeed.salt,
+      unpackedSeed.iv,
+      unpackedSeed.authTag
     );
 
     const masterSeed = Buffer.from(masterSeedHex, 'hex');
@@ -90,7 +93,7 @@ export class WalletService {
   /**
    * Creates a new ghost wallet for a user
    */
-  static async createGhostWallet(input: SpawnWalletInput): Promise<GhostWallet> {
+  static async createGhostWallet(input: SpawnWalletInput, userPassword: string): Promise<GhostWallet> {
     const { userId, fundAmount, strategyId } = input;
 
     // Get next wallet index for this user
@@ -115,10 +118,8 @@ export class WalletService {
     // Generate derivation path
     const derivationPath = `m/44'/501'/0'/0/${nextIndex}`;
 
-    // NOTE: We don't store the private key - it's derived on-demand from master seed
-    // For now, generate a temporary keypair just to get the public key
-    // In production, you'd decrypt master seed here
-    const tempKeypair = Keypair.generate(); // PLACEHOLDER - Replace with actual derivation
+    // Derive the actual keypair from the user's master seed
+    const derivedKeypair = await this.deriveUserKeypair(userId, nextIndex, userPassword);
 
     // Create ghost wallet record
     const result = await pool.query(
@@ -135,7 +136,7 @@ export class WalletService {
       RETURNING *`,
       [
         userId,
-        tempKeypair.publicKey.toString(),
+        derivedKeypair.publicKey.toString(),
         derivationPath,
         nextIndex,
         'active',
@@ -356,6 +357,7 @@ export class WalletService {
    */
   static async getOrCreateTradingWallet(
     userId: string,
+    userPassword: string,
     strategyId?: string
   ): Promise<GhostWallet> {
     // First, check if there's an active wallet with capacity
@@ -376,7 +378,7 @@ export class WalletService {
     }
 
     // No suitable wallet found, create new one
-    return await this.createGhostWallet({ userId, strategyId });
+    return await this.createGhostWallet({ userId, strategyId }, userPassword);
   }
 
   // ============================================================
