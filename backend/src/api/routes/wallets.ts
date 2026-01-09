@@ -39,10 +39,18 @@ router.post('/create', authenticate, async (req: AuthRequest, res: Response) => 
 
     res.status(201).json(response);
   } catch (error: any) {
-    console.error('Error creating wallet:', error);
-    res.status(error.statusCode || 500).json({
+    console.error('Error creating wallet:', {
+      userId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    // Return appropriate status code
+    const statusCode = error.statusCode || (error.message.includes('Password') || error.message.includes('decrypt') ? 401 : 500);
+
+    res.status(statusCode).json({
       success: false,
-      error: error.message
+      error: error.message || 'Failed to create wallet'
     });
   }
 });

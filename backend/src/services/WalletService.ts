@@ -70,15 +70,28 @@ export class WalletService {
 
     const { master_seed_encrypted, encryption_salt } = userResult.rows[0];
 
-    // Unpack and decrypt master seed
-    const unpackedSeed = EncryptionService.unpackEncrypted(master_seed_encrypted);
-    const masterSeedHex = EncryptionService.decrypt(
-      unpackedSeed.encrypted,
-      userPassword,
-      unpackedSeed.salt,
-      unpackedSeed.iv,
-      unpackedSeed.authTag
-    );
+    // Decrypt master seed (handle both packed and unpacked formats for backward compatibility)
+    let masterSeedHex: string;
+
+    try {
+      // Try new packed format first (salt:iv:authTag:encrypted)
+      const unpackedSeed = EncryptionService.unpackEncrypted(master_seed_encrypted);
+      masterSeedHex = EncryptionService.decrypt(
+        unpackedSeed.encrypted,
+        userPassword,
+        unpackedSeed.salt,
+        unpackedSeed.iv,
+        unpackedSeed.authTag
+      );
+    } catch (unpackError: any) {
+      console.error('Failed to decrypt master seed:', {
+        userId,
+        error: unpackError.message,
+        seedFormat: master_seed_encrypted?.substring(0, 50) + '...',
+        hasSalt: !!encryption_salt
+      });
+      throw new Error(`Failed to decrypt master seed: ${unpackError.message}. Please try logging out and back in, or contact support if the issue persists.`);
+    }
 
     const masterSeed = Buffer.from(masterSeedHex, 'hex');
 

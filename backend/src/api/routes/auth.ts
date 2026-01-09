@@ -182,6 +182,55 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * GET /api/auth/debug-encryption
+ * Debug endpoint to check encryption format
+ */
+router.get('/debug-encryption', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+
+    const result = await AuthService.getUserById(req.user.userId);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Get raw user data
+    const { pool } = require('../../config/database');
+    const userQuery = await pool.query(
+      'SELECT master_seed_encrypted, encryption_salt FROM users WHERE id = $1',
+      [req.user.userId]
+    );
+
+    const user = userQuery.rows[0];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        seedLength: user.master_seed_encrypted?.length || 0,
+        seedPreview: user.master_seed_encrypted?.substring(0, 100) || '',
+        saltLength: user.encryption_salt?.length || 0,
+        hasSeparator: user.master_seed_encrypted?.includes(':') || false,
+        separatorCount: (user.master_seed_encrypted?.match(/:/g) || []).length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check encryption format'
+    });
+  }
+});
+
+/**
  * POST /api/auth/backup-seed
  * Get master seed phrase for backup (requires password verification)
  */
