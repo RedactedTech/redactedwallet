@@ -38,7 +38,7 @@ export default function TransactionPreview({ formData, onCancel, onConfirm, isEx
       const accessToken = localStorage.getItem('accessToken');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-      const response = await fetch(`${apiUrl}/api/ghost-wallets/list`, {
+      const response = await fetch(`${apiUrl}/api/wallets`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
