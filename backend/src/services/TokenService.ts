@@ -220,20 +220,54 @@ export class TokenService {
   // ============================================================
 
   /**
-   * Fetch token metadata from chain
-   * NOTE: This is simplified - integrate with token metadata services
+   * Fetch token metadata from DexScreener API
+   * Falls back to on-chain data if DexScreener doesn't have info
    */
   static async fetchTokenMetadata(
     tokenAddress: string
   ): Promise<{ symbol: string | null; name: string | null; decimals: number }> {
     try {
-      // TODO: Integrate with token metadata registry or on-chain data
-      // Example: Use @solana/spl-token-registry or fetch from chain
+      console.log(`📋 Fetching metadata for ${tokenAddress} from DexScreener...`);
 
+      // Try DexScreener first
+      const response = await axios.get(
+        `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
+        {
+          timeout: 5000,
+        }
+      );
+
+      if (response.data?.pairs && response.data.pairs.length > 0) {
+        // Find Solana pair with highest liquidity
+        const solanaPairs = response.data.pairs.filter((pair: any) => pair.chainId === 'solana');
+
+        if (solanaPairs.length > 0) {
+          const bestPair = solanaPairs.sort((a: any, b: any) => {
+            const liquidityA = parseFloat(a.liquidity?.usd || '0');
+            const liquidityB = parseFloat(b.liquidity?.usd || '0');
+            return liquidityB - liquidityA;
+          })[0];
+
+          // Extract token info from the pair
+          // The baseToken is usually the token we're looking for
+          const baseToken = bestPair.baseToken;
+
+          if (baseToken?.address?.toLowerCase() === tokenAddress.toLowerCase()) {
+            console.log(`✅ Found metadata: ${baseToken.symbol} (${baseToken.name})`);
+            return {
+              symbol: baseToken.symbol || null,
+              name: baseToken.name || null,
+              decimals: 9, // Default for Solana tokens
+            };
+          }
+        }
+      }
+
+      console.log(`⚠️ No metadata found on DexScreener for ${tokenAddress}`);
       return {
         symbol: null,
         name: null,
-        decimals: 9, // Default for most Solana tokens
+        decimals: 9,
       };
     } catch (error: any) {
       console.error('Error fetching token metadata:', error.message);

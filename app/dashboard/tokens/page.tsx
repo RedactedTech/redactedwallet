@@ -138,19 +138,61 @@ export default function TokensPage() {
       const accessToken = localStorage.getItem('accessToken');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-      const response = await fetch(`${apiUrl}/api/tokens/search?q=${encodeURIComponent(query)}&limit=20`, {
+      // First, try searching in monitored tokens
+      const monitoredResponse = await fetch(`${apiUrl}/api/tokens/search?q=${encodeURIComponent(query)}&limit=20`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       });
 
-      const data = await response.json();
+      const monitoredData = await monitoredResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to search tokens');
+      if (monitoredResponse.ok && monitoredData.data && monitoredData.data.length > 0) {
+        setFilteredTokens(monitoredData.data);
+        return;
       }
 
-      setFilteredTokens(data.data || []);
+      // If no monitored tokens found, search all tokens via pump.fun API
+      const pumpfunResponse = await fetch(`${apiUrl}/api/pumpfun/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      const pumpfunData = await pumpfunResponse.json();
+
+      if (pumpfunResponse.ok && pumpfunData.data && pumpfunData.data.length > 0) {
+        // Convert pump.fun results to monitored token format
+        const convertedTokens = pumpfunData.data.map((token: any) => ({
+          id: token.mint,
+          token_address: token.mint,
+          token_symbol: token.symbol,
+          token_name: token.name,
+          discovered_at: new Date().toISOString(),
+          source: 'manual',
+          current_price_usd: null,
+          market_cap_usd: token.market_cap || null,
+          liquidity_usd: null,
+          volume_24h_usd: null,
+          holder_count: null,
+          is_trending: false,
+          momentum_score: null,
+          risk_score: null,
+          metadata: { image_uri: token.image_uri },
+          last_updated: new Date().toISOString(),
+          _isSearchResult: true // Flag to indicate this is a search result, not monitored
+        }));
+        setFilteredTokens(convertedTokens);
+        return;
+      }
+
+      // If both searches fail, fall back to client-side filtering
+      const filtered = tokens.filter(token =>
+        token.token_symbol?.toLowerCase().includes(query.toLowerCase()) ||
+        token.token_name?.toLowerCase().includes(query.toLowerCase()) ||
+        token.token_address.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredTokens(filtered);
     } catch (err) {
       console.error('Search error:', err);
       // If search fails, fall back to client-side filtering
@@ -191,6 +233,37 @@ export default function TokensPage() {
     if (volume >= 1000000) return `$${(volume / 1000000).toFixed(2)}M`;
     if (volume >= 1000) return `$${(volume / 1000).toFixed(2)}K`;
     return `$${volume.toFixed(2)}`;
+  };
+
+  const addTokenToMonitor = async (tokenAddress: string) => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+      const response = await fetch(`${apiUrl}/api/tokens/watch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          tokenAddress,
+          source: 'manual'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add token');
+      }
+
+      // Refresh tokens list
+      await fetchTrendingTokens();
+      setSearchQuery(''); // Clear search to show all monitored tokens
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add token to monitoring');
+    }
   };
 
   return (
@@ -258,12 +331,15 @@ export default function TokensPage() {
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">24h Volume</th>
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Risk</th>
                     <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Source</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTokens.map((token) => {
                     const metadata = metadataCache[token.token_address];
-                    const imageUrl = metadata?.imageUrl || getTokenImageUrl(null, token.token_symbol || undefined);
+                    // For search results, use the image_uri from metadata, otherwise use cached or fallback
+                    const searchResultImage = (token as any).metadata?.image_uri;
+                    const imageUrl = searchResultImage || metadata?.imageUrl || getTokenImageUrl(null, token.token_symbol || undefined);
                     const displayName = metadata?.name || token.token_name;
 
                     return (
@@ -304,6 +380,23 @@ export default function TokensPage() {
                         </td>
                         <td className="py-4 px-4">
                           {getSourceBadge(token.source)}
+                        </td>
+                        <td className="py-4 px-4">
+                          {(token as any)._isSearchResult ? (
+                            <button
+                              onClick={() => addTokenToMonitor(token.token_address)}
+                              className="px-3 py-1 text-sm rounded-lg transition-colors"
+                              style={{
+                                background: 'rgba(34, 211, 238, 0.1)',
+                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                color: '#22d3ee'
+                              }}
+                            >
+                              Add to Monitor
+                            </button>
+                          ) : (
+                            <span className="text-gray-500 text-sm">Monitored</span>
+                          )}
                         </td>
                       </tr>
                     );
