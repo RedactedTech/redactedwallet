@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { AuthRequest } from '../types';
 import axios from 'axios';
 
@@ -8,8 +8,9 @@ const router = Router();
 /**
  * Get token metadata using DexScreener API
  * Returns pump.fun compatible format
+ * Public endpoint - no auth required for token metadata
  */
-router.get('/metadata/:tokenAddress', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/metadata/:tokenAddress', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { tokenAddress } = req.params;
 
@@ -99,8 +100,9 @@ router.get('/metadata/:tokenAddress', authenticate, async (req: AuthRequest, res
 /**
  * Search tokens using DexScreener API
  * Supports both contract address lookup and text search
+ * Public endpoint - no auth required for token search
  */
-router.get('/search', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/search', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { q } = req.query;
 
