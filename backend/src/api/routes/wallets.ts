@@ -262,6 +262,62 @@ router.post('/trading-wallet', authenticate, async (req: AuthRequest, res: Respo
 });
 
 /**
+ * POST /api/wallets/:id/transfer
+ * Transfer SOL or tokens from a ghost wallet to a destination address
+ */
+router.post('/:id/transfer', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+    const { destinationAddress, amount, tokenMint, password } = req.body;
+
+    if (!destinationAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Destination address is required'
+      });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid amount is required'
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required'
+      });
+    }
+
+    const result = await WalletService.transferFunds(
+      id,
+      userId,
+      destinationAddress,
+      amount,
+      password,
+      tokenMint
+    );
+
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      data: result,
+      message: `Transfer completed successfully. Sent ${result.amount} ${tokenMint ? 'tokens' : 'SOL'}.`
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('Error transferring funds:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/wallets/:id/drain
  * Drain all funds from a ghost wallet to a destination address
  */

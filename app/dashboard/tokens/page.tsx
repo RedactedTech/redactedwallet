@@ -348,7 +348,7 @@ export default function TokensPage() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-black">
+    <div className="min-h-screen p-6">
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6">

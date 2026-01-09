@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { TransferModal } from '../components/TransferModal';
 import { apiGet, apiPost, parseApiResponse } from '../utils/api';
 
 interface User {
@@ -72,6 +73,8 @@ export default function DashboardPage() {
   const [isLoadingBackup, setIsLoadingBackup] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState('');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferWallet, setTransferWallet] = useState<Wallet | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -714,7 +717,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500">
                       Created {new Date(wallet.created_at).toLocaleDateString()}
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => {
                           setRecoveryWallet(wallet);
@@ -725,8 +728,18 @@ export default function DashboardPage() {
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Recovery
+                        Info
                       </button>
+                      <Button
+                        variant="primary"
+                        onClick={() => {
+                          setTransferWallet(wallet);
+                          setShowTransferModal(true);
+                        }}
+                        className="text-xs py-2"
+                      >
+                        Transfer
+                      </Button>
                       <Button
                         variant="secondary"
                         onClick={() => handleOpenDrainModal(wallet)}
@@ -1260,6 +1273,18 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
+      )}
+      {/* Transfer Modal */}
+      {transferWallet && (
+        <TransferModal
+          isOpen={showTransferModal}
+          onClose={() => {
+            setShowTransferModal(false);
+            setTransferWallet(null);
+          }}
+          wallet={transferWallet}
+          onTransferComplete={loadDashboardData}
+        />
       )}
     </div>
   );

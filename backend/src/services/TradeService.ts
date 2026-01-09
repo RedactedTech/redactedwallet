@@ -67,6 +67,16 @@ export class TradeService {
 
       return quote;
     } catch (error: any) {
+      console.error('❌ Jupiter quote error:', {
+        message: error.message,
+        name: error.name,
+        response: error.response?.data,
+        status: error.response?.status,
+        inputMint,
+        outputMint,
+        amount,
+        slippageBps,
+      });
       throw new Error(`Failed to get Jupiter quote: ${error.message}`);
     }
   }
@@ -81,38 +91,88 @@ export class TradeService {
   }> {
     const { walletKeypair, inputMint, outputMint, amount, slippageBps } = input;
 
-    // Get quote
-    const quote = await this.getQuote(inputMint, outputMint, amount, slippageBps);
+    try {
+      // Get quote
+      console.log(`🔍 Getting Jupiter quote: ${inputMint} -> ${outputMint}, amount: ${amount}, slippage: ${slippageBps}bps`);
+      const quote = await this.getQuote(inputMint, outputMint, amount, slippageBps);
+      console.log(`✅ Quote received: ${quote.inAmount} -> ${quote.outAmount}`);
 
-    // Get swap transaction
-    const swapResult = await this.jupiterApi.swapPost({
-      swapRequest: {
-        quoteResponse: quote,
-        userPublicKey: walletKeypair.publicKey.toBase58(),
-        wrapAndUnwrapSol: true,
-        dynamicComputeUnitLimit: true,
-        prioritizationFeeLamports: 'auto',
-      },
-    });
+      // Get swap transaction
+      console.log(`🔄 Requesting swap transaction for wallet: ${walletKeypair.publicKey.toBase58()}`);
+      const swapResult = await this.jupiterApi.swapPost({
+        swapRequest: {
+          quoteResponse: quote,
+          userPublicKey: walletKeypair.publicKey.toBase58(),
+          wrapAndUnwrapSol: true,
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: {
+            priorityLevelWithMaxLamports: {
+              priorityLevel: 'high',
+              maxLamports: 100000, // Cap at 0.0001 SOL
+              global: false, // Use local fee market for better accuracy
+            },
+          },
+        },
+      });
+      console.log(`✅ Swap transaction received`);
 
-    // Deserialize transaction
-    const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
-    const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+      // Deserialize transaction
+      const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
-    // Sign transaction
-    transaction.sign([walletKeypair]);
+      // Sign transaction
+      transaction.sign([walletKeypair]);
+      console.log(`✅ Transaction signed`);
 
-    // Send and confirm transaction
-    const result = await SolanaService.sendAndConfirmTransaction(transaction, {
-      commitment: 'confirmed',
-      maxRetries: 3,
-    });
+      // Send and confirm transaction
+      console.log(`📤 Sending transaction to Solana...`);
+      const result = await SolanaService.sendAndConfirmTransaction(transaction, {
+        commitment: 'confirmed',
+        maxRetries: 3,
+      });
+      console.log(`✅ Transaction confirmed: ${result.signature}`);
 
-    return {
-      signature: result.signature,
-      inputAmount: parseInt(quote.inAmount),
-      outputAmount: parseInt(quote.outAmount),
-    };
+      return {
+        signature: result.signature,
+        inputAmount: parseInt(quote.inAmount),
+        outputAmount: parseInt(quote.outAmount),
+      };
+    } catch (error: any) {
+      console.error('❌ Jupiter swap error:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+        inputMint,
+        outputMint,
+        amount,
+        slippageBps,
+      });
+
+      // Detect specific error patterns and provide user-friendly messages
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('Attempt to debit an account but found no record of a prior credit')) {
+        throw new Error(
+          'Insufficient funds: The wallet does not have enough SOL to complete this transaction. Please fund the wallet and try again.'
+        );
+      }
+      
+      if (errorMessage.includes('Transaction simulation failed')) {
+        throw new Error(
+          `Transaction simulation failed: ${errorMessage}. This usually indicates insufficient funds or an issue with the token. Please check your wallet balance.`
+        );
+      }
+      
+      if (errorMessage.includes('No quote available') || errorMessage.includes('No routes found')) {
+        throw new Error(
+          'Unable to find a trading route for this token. The token may have insufficient liquidity or may not be tradeable at this time.'
+        );
+      }
+
+      throw error;
+    }
   }
 
   // ============================================================
@@ -153,6 +213,19 @@ export class TradeService {
 
     // SOL mint address (wrapped SOL)
     const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+    // Check wallet balance before attempting trade
+    const balance = await SolanaService.getSOLBalance(walletKeypair.publicKey);
+    const requiredLamports = amountLamports + 50000; // Add buffer for transaction fees (~0.00005 SOL)
+    
+    if (balance.lamports < requiredLamports) {
+      const requiredSol = requiredLamports / 1e9;
+      throw new Error(
+        `Insufficient funds: Wallet has ${balance.sol.toFixed(6)} SOL but needs ${requiredSol.toFixed(6)} SOL (${entryAmountSol} SOL for trade + ~0.00005 SOL for fees). Please fund the wallet first.`
+      );
+    }
+
+    console.log(`✅ Wallet balance check passed: ${balance.sol.toFixed(6)} SOL available`);
 
     try {
       // Execute buy swap (SOL -> Token)

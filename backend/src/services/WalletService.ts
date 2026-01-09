@@ -448,6 +448,197 @@ export class WalletService {
   }
 
   // ============================================================
+  // WALLET TRANSFERS
+  // ============================================================
+
+  /**
+   * Transfer funds from a ghost wallet to a destination address
+   * Supports both SOL and SPL token transfers
+   */
+  static async transferFunds(
+    walletId: string,
+    userId: string,
+    destinationAddress: string,
+    amount: number,
+    userPassword: string,
+    tokenMint?: string
+  ): Promise<{
+    signature: string;
+    amount: number;
+    tokenMint?: string;
+    fee: number;
+  }> {
+    // Verify wallet belongs to user
+    const wallet = await this.getWalletById(walletId, userId);
+
+    if (wallet.status !== 'active') {
+      throw new ValidationError('Can only transfer from active wallets');
+    }
+
+    // Validate destination address
+    let destinationPubkey: PublicKey;
+    try {
+      destinationPubkey = new PublicKey(destinationAddress);
+    } catch (error) {
+      throw new ValidationError('Invalid destination address');
+    }
+
+    // Derive keypair from master seed
+    const walletKeypair = await this.deriveUserKeypair(
+      userId,
+      wallet.wallet_index,
+      userPassword
+    );
+
+    const connection = getSolanaConnection();
+    const walletPubkey = walletKeypair.publicKey;
+
+    try {
+      if (tokenMint) {
+        // SPL Token Transfer
+        const tokenMintPubkey = new PublicKey(tokenMint);
+        
+        // Get token balance
+        const tokenBalance = await SolanaService.getTokenBalance(walletPubkey, tokenMintPubkey);
+        
+        if (tokenBalance.balance === 0) {
+          throw new ValidationError('No tokens to transfer');
+        }
+
+        if (amount > tokenBalance.uiAmount) {
+          throw new ValidationError(`Insufficient token balance. Available: ${tokenBalance.uiAmount}`);
+        }
+
+        // Convert UI amount to raw amount
+        const rawAmount = Math.floor(amount * Math.pow(10, tokenBalance.decimals));
+
+        // Get source and destination token accounts
+        const sourceTokenAccount = await getAssociatedTokenAddress(
+          tokenMintPubkey,
+          walletPubkey
+        );
+        const destTokenAccount = await getAssociatedTokenAddress(
+          tokenMintPubkey,
+          destinationPubkey
+        );
+
+        // Build transfer instruction
+        const transferInstruction = createTransferInstruction(
+          sourceTokenAccount,
+          destTokenAccount,
+          walletPubkey,
+          rawAmount,
+          [],
+          TOKEN_PROGRAM_ID
+        );
+
+        // Create transaction
+        const transaction = new Transaction();
+        const { blockhash } = await SolanaService.getRecentBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = walletPubkey;
+        transaction.add(transferInstruction);
+
+        // Sign and send
+        transaction.sign(walletKeypair);
+        const result = await SolanaService.sendAndConfirmTransaction(transaction, {
+          commitment: 'confirmed',
+        });
+
+        // Log audit event
+        await pool.query(
+          `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            userId,
+            'ghost_wallet_transfer',
+            'ghost_wallet',
+            walletId,
+            JSON.stringify({
+              destination: destinationAddress,
+              amount,
+              token_mint: tokenMint,
+              signature: result.signature,
+            }),
+          ]
+        );
+
+        return {
+          signature: result.signature,
+          amount,
+          tokenMint,
+          fee: 0.000005, // Approximate SPL transfer fee
+        };
+      } else {
+        // SOL Transfer
+        const balance = await connection.getBalance(walletPubkey);
+        const solBalance = balance / LAMPORTS_PER_SOL;
+
+        if (solBalance === 0) {
+          throw new ValidationError('No SOL to transfer');
+        }
+
+        // Estimate fee (5000 lamports = 0.000005 SOL)
+        const estimatedFee = 5000;
+        const maxTransferable = (balance - estimatedFee) / LAMPORTS_PER_SOL;
+
+        if (amount > maxTransferable) {
+          throw new ValidationError(
+            `Insufficient balance. Available: ${maxTransferable.toFixed(6)} SOL (after fees)`
+          );
+        }
+
+        const lamportsToTransfer = Math.floor(amount * LAMPORTS_PER_SOL);
+
+        // Create transaction
+        const transaction = new Transaction();
+        const { blockhash } = await SolanaService.getRecentBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = walletPubkey;
+
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: walletPubkey,
+            toPubkey: destinationPubkey,
+            lamports: lamportsToTransfer,
+          })
+        );
+
+        transaction.sign(walletKeypair);
+        const result = await SolanaService.sendAndConfirmTransaction(transaction, {
+          commitment: 'confirmed',
+        });
+
+        // Log audit event
+        await pool.query(
+          `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            userId,
+            'ghost_wallet_transfer',
+            'ghost_wallet',
+            walletId,
+            JSON.stringify({
+              destination: destinationAddress,
+              amount,
+              signature: result.signature,
+            }),
+          ]
+        );
+
+        return {
+          signature: result.signature,
+          amount,
+          fee: estimatedFee / LAMPORTS_PER_SOL,
+        };
+      }
+    } catch (error: any) {
+      console.error('Error transferring funds:', error);
+      throw new Error(`Failed to transfer funds: ${error.message}`);
+    }
+  }
+
+  // ============================================================
   // WALLET DRAINING
   // ============================================================
 
