@@ -87,7 +87,25 @@ function TradePageContent() {
   };
 
   const handlePreview = () => {
+    // Show password modal first
+    setShowPasswordModal(true);
+    setTradePassword('');
+    setTradeError('');
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!tradePassword) {
+      setTradeError('Password is required');
+      return;
+    }
+    setShowPasswordModal(false);
     setShowPreview(true);
+  };
+
+  const handleCancelPasswordModal = () => {
+    setShowPasswordModal(false);
+    setTradePassword('');
+    setTradeError('');
   };
 
   const handleCancelPreview = () => {
