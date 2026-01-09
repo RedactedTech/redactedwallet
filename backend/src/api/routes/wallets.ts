@@ -14,8 +14,9 @@ const router = express.Router();
  * Create a new ghost wallet
  */
 router.post('/create', authenticate, async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId; // Move to outer scope so catch can access it
+
   try {
-    const userId = req.user!.userId;
     const { strategyId, fundAmount, password } = req.body;
 
     console.log('🔍 Create wallet request:', {
@@ -48,7 +49,7 @@ router.post('/create', authenticate, async (req: AuthRequest, res: Response) => 
 
     res.status(201).json(response);
   } catch (error: any) {
-    console.error('Error creating wallet:', {
+    console.error('❌ Error creating wallet:', {
       userId,
       error: error.message,
       stack: error.stack
