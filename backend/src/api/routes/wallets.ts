@@ -18,6 +18,15 @@ router.post('/create', authenticate, async (req: AuthRequest, res: Response) => 
     const userId = req.user!.userId;
     const { strategyId, fundAmount, password } = req.body;
 
+    console.log('🔍 Create wallet request:', {
+      userId,
+      hasPassword: !!password,
+      passwordLength: password?.length || 0,
+      passwordType: typeof password,
+      strategyId,
+      fundAmount
+    });
+
     if (!password) {
       return res.status(400).json({
         success: false,

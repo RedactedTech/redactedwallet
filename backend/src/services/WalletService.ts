@@ -58,6 +58,13 @@ export class WalletService {
     walletIndex: number,
     userPassword: string
   ): Promise<Keypair> {
+    console.log('🔑 Deriving keypair:', {
+      userId,
+      walletIndex,
+      hasPassword: !!userPassword,
+      passwordLength: userPassword?.length || 0
+    });
+
     // Fetch user's encrypted master seed
     const userResult = await pool.query(
       'SELECT master_seed_encrypted, encryption_salt FROM users WHERE id = $1',
@@ -69,6 +76,14 @@ export class WalletService {
     }
 
     const { master_seed_encrypted, encryption_salt } = userResult.rows[0];
+
+    console.log('🔒 Encryption data:', {
+      seedLength: master_seed_encrypted?.length || 0,
+      seedPreview: master_seed_encrypted?.substring(0, 50) + '...',
+      saltLength: encryption_salt?.length || 0,
+      hasSeparator: master_seed_encrypted?.includes(':'),
+      separatorCount: (master_seed_encrypted?.match(/:/g) || []).length
+    });
 
     // Decrypt master seed (handle both packed and unpacked formats for backward compatibility)
     let masterSeedHex: string;
