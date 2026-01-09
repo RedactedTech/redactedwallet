@@ -41,6 +41,10 @@ interface Wallet {
   created_at: string;
   total_trades: number;
   profit_loss_usd: string;
+  balance?: {
+    sol: number;
+    lamports: number;
+  };
 }
 
 export default function DashboardPage() {
@@ -115,7 +119,24 @@ export default function DashboardPage() {
       const walletsRes = await apiGet('/api/wallets?status=active');
       if (walletsRes.ok) {
         const walletsData = await parseApiResponse(walletsRes);
-        setWallets(walletsData);
+
+        // Fetch balances for each wallet
+        const walletsWithBalances = await Promise.all(
+          walletsData.map(async (wallet: Wallet) => {
+            try {
+              const balanceRes = await apiGet(`/api/wallets/${wallet.id}/balance`);
+              if (balanceRes.ok) {
+                const balance = await parseApiResponse(balanceRes);
+                return { ...wallet, balance };
+              }
+            } catch (error) {
+              console.error(`Failed to fetch balance for wallet ${wallet.id}:`, error);
+            }
+            return wallet;
+          })
+        );
+
+        setWallets(walletsWithBalances);
       }
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -666,7 +687,13 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-800">
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-800">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Balance</p>
+                      <p className="text-sm font-semibold text-white">
+                        {wallet.balance ? `${wallet.balance.sol.toFixed(4)} SOL` : '...'}
+                      </p>
+                    </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Trades</p>
                       <p className="text-sm font-semibold text-white">

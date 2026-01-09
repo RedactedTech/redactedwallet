@@ -41,13 +41,34 @@ export class WalletService {
     walletIndex: number
   ): Keypair {
     // BIP44 derivation path for Solana
-    // m/44'/501'/account'/change/index
-    const path = `m/44'/501'/0'/0/${walletIndex}`;
+    // Note: ed25519-hd-key only supports hardened derivation
+    // So we use all hardened levels
+    const path = `m/44'/501'/${walletIndex}'`;
 
-    const derivedSeed = derivePath(path, masterSeed.toString('hex')).key;
-    const keypair = Keypair.fromSeed(derivedSeed);
+    console.log('🔀 Deriving from path:', {
+      path,
+      seedLength: masterSeed.length,
+      seedHexLength: masterSeed.toString('hex').length,
+      walletIndex
+    });
 
-    return keypair;
+    try {
+      const derivedSeed = derivePath(path, masterSeed.toString('hex')).key;
+      const keypair = Keypair.fromSeed(derivedSeed);
+
+      console.log('✅ Derivation successful:', {
+        publicKey: keypair.publicKey.toString()
+      });
+
+      return keypair;
+    } catch (error: any) {
+      console.error('❌ Derivation failed:', {
+        path,
+        seedLength: masterSeed.length,
+        error: error.message
+      });
+      throw error;
+    }
   }
 
   /**
@@ -108,10 +129,27 @@ export class WalletService {
       throw new Error(`Failed to decrypt master seed: ${unpackError.message}. Please try logging out and back in, or contact support if the issue persists.`);
     }
 
-    const masterSeed = Buffer.from(masterSeedHex, 'hex');
+    const entropyBuffer = Buffer.from(masterSeedHex, 'hex');
+
+    console.log('🌱 Entropy info:', {
+      hexLength: masterSeedHex.length,
+      bufferLength: entropyBuffer.length,
+      isValidHex: /^[0-9a-fA-F]+$/.test(masterSeedHex),
+      preview: masterSeedHex.substring(0, 32) + '...'
+    });
+
+    // Convert 32-byte entropy to BIP39 mnemonic, then to 64-byte seed
+    // This is required for ed25519-hd-key derivation
+    const mnemonic = bip39.entropyToMnemonic(entropyBuffer);
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+
+    console.log('🌱 Final seed info:', {
+      seedLength: seed.length,
+      mnemonicWords: mnemonic.split(' ').length
+    });
 
     // Derive keypair at index
-    return this.deriveKeypairFromSeed(masterSeed, walletIndex);
+    return this.deriveKeypairFromSeed(seed, walletIndex);
   }
 
   // ============================================================
