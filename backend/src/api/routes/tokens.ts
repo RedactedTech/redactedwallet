@@ -1,5 +1,6 @@
 import express, { Response } from 'express';
 import { TokenService, MonitoredToken } from '../../services/TokenService';
+import { BirdeyeService } from '../../services/BirdeyeService';
 import { authenticate, optionalAuthenticate } from '../../middleware/auth';
 import { AuthRequest, ApiResponse } from '../../types';
 
@@ -41,17 +42,17 @@ router.get('/', optionalAuthenticate, async (req: AuthRequest, res: Response) =>
 
 /**
  * GET /api/tokens/trending
- * Get trending tokens
+ * Get trending tokens from Birdeye
  */
 router.get('/trending', async (req: AuthRequest, res: Response) => {
   try {
     const { limit } = req.query;
 
-    const tokens = await TokenService.getTrendingTokens(
+    const tokens = await BirdeyeService.getTopTokens(
       limit ? parseInt(limit as string) : 10
     );
 
-    const response: ApiResponse<MonitoredToken[]> = {
+    const response: ApiResponse<typeof tokens> = {
       success: true,
       data: tokens,
     };

@@ -46,6 +46,8 @@ function TradePageContent() {
     useJitoBundle: true
   });
   const [showPreview, setShowPreview] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [tradePassword, setTradePassword] = useState('');
 
   // Load token from URL parameter
   useEffect(() => {

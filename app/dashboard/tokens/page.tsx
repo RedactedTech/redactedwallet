@@ -26,6 +26,21 @@ interface MonitoredToken {
   last_updated: string;
 }
 
+interface BirdeyeToken {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI?: string;
+  liquidity: number;
+  price: number;
+  priceChange24h: number;
+  volume24h: number;
+  volume24hChangePercent: number;
+  marketCap: number;
+  holders?: number;
+}
+
 interface TokenMetadataCache {
   [tokenAddress: string]: {
     imageUrl: string;
@@ -35,6 +50,7 @@ interface TokenMetadataCache {
 
 export default function TokensPage() {
   const [tokens, setTokens] = useState<MonitoredToken[]>([]);
+  const [trendingTokens, setTrendingTokens] = useState<BirdeyeToken[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<MonitoredToken[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +61,7 @@ export default function TokensPage() {
 
   useEffect(() => {
     fetchTrendingTokens();
+    fetchBirdeyeTrendingTokens();
   }, []);
 
   // Fetch metadata for tokens
@@ -118,6 +135,28 @@ export default function TokensPage() {
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, tokens]);
+
+  const fetchBirdeyeTrendingTokens = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+      const response = await fetch(`${apiUrl}/api/tokens/trending?limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.data) {
+        setTrendingTokens(data.data);
+        console.log('Fetched Birdeye trending tokens:', data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching Birdeye trending tokens:', err);
+    }
+  };
 
   const fetchTrendingTokens = async () => {
     try {
@@ -357,8 +396,107 @@ export default function TokensPage() {
         )}
       </div>
 
-      {/* Tokens Table */}
+      {/* Top Trending Tokens from Birdeye */}
+      {trendingTokens.length > 0 && (
+        <div className="max-w-7xl mx-auto mb-8">
+          <h2 className="text-xl font-semibold text-white mb-4">
+            🔥 Top Trending Tokens (Birdeye)
+          </h2>
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Rank</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Token</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Price</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">24h Change</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">24h Volume</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Market Cap</th>
+                    <th className="text-left py-4 px-4 text-sm font-semibold text-gray-400">Liquidity</th>
+                    <th className="text-right py-4 px-4 text-sm font-semibold text-gray-400">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trendingTokens.map((token, index) => (
+                    <tr
+                      key={token.address}
+                      className="border-b border-gray-800 hover:bg-white/5 transition-colors"
+                    >
+                      <td className="py-4 px-4 text-white font-semibold">
+                        #{index + 1}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={token.logoURI || `https://ui-avatars.com/api/?name=${token.symbol}&background=random`}
+                            alt={token.symbol}
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = `https://ui-avatars.com/api/?name=${token.symbol}&background=random`;
+                            }}
+                          />
+                          <div>
+                            <p className="text-white font-semibold">
+                              {token.symbol}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate max-w-xs">
+                              {token.name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-white">
+                        {formatPrice(token.price)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`font-semibold ${
+                          token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {token.priceChange24h >= 0 ? '+' : ''}{token.priceChange24h.toFixed(2)}%
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-white">
+                        {formatVolume(token.volume24h)}
+                      </td>
+                      <td className="py-4 px-4 text-white">
+                        {formatVolume(token.marketCap)}
+                      </td>
+                      <td className="py-4 px-4 text-white">
+                        {formatVolume(token.liquidity)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/dashboard/trade?token=${token.address}`}>
+                            <button
+                              className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:scale-105"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.1))',
+                                border: '1px solid rgba(34, 211, 238, 0.5)',
+                                color: '#22d3ee',
+                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
+                              }}
+                            >
+                              🚀 Trade
+                            </button>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Monitored Tokens Table */}
       <div className="max-w-7xl mx-auto">
+        <h2 className="text-xl font-semibold text-white mb-4">
+          Your Monitored Tokens
+        </h2>
         <Card>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
