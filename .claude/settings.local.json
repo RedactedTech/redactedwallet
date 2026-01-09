@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYjg0N2Y5Yi00OTRjLTQ4YjgtYjQxZS0xNmU2NjBhNzNkNjYiLCJlbWFpbCI6ImZpbmFsdGVzdEByZWRhY3RlZC5jb20iLCJpYXQiOjE3Njc5MDMyMzksImV4cCI6MTc2NzkwNDEzOX0.VE81_3C4R4zy7glBY_3FwEZHgbMyFn18Sh9-6fT1GJE\":*)",
-      "Bash(curl:*)",
-      "WebSearch"
-    ]
-  }
-}
