@@ -1,4 +1,4 @@
-# Frontend service configuration
+# Frontend (redacted) service configuration
 [build]
 builder = "nixpacks"
 buildCommand = "npm run build"
@@ -7,3 +7,6 @@ buildCommand = "npm run build"
 startCommand = "next start -p $PORT"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
+
+[environments.production]
+watch = ["app/**", "public/**", "next.config.ts", "tailwind.config.ts"]

@@ -1,0 +1,11 @@
+# Backend service configuration
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm run start:backend"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[environments.production]
+watch = ["backend/**"]
